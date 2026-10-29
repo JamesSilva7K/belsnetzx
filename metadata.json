@@ -1,0 +1,6 @@
+{
+  "name": "Aura Rosa Boutique",
+  "description": "Loja de roupas femininas com backend real: catálogo e estoque por variação, checkout com Pix BR Code válido, contas de cliente, painel administrativo em caminho criptografado com 2FA e bot de Telegram que notifica e opera a loja por botões.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

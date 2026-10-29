@@ -1,0 +1,240 @@
+/**
+ * Financeiro — todo número vem de pedidos e lançamentos reais.
+ * Nenhum valor é estimado ou inventado; quando não há dado, retorna 0.
+ */
+import { config } from '../config.js';
+import { commit, db, nextId } from '../lib/db.js';
+import { HttpError, assert } from '../lib/errors.js';
+import { brl, nowIso, onlyDigits } from '../lib/format.js';
+import { notify } from './notify.js';
+
+const CATEGORY_LABELS = {
+ venda: 'Venda',
+ fornecedor: 'Fornecedor',
+ marketing: 'Marketing',
+ embalagens: 'Embalagens',
+ logistica: 'Logística',
+ taxa_gateway: 'Taxa de gateway',
+ manutencao: 'Manutenção',
+ outros: 'Outros'
+};
+
+export function addCashflowEntry(input, { actor = 'painel' } = {}) {
+ const type = input.type === 'entrada' ? 'entrada' : 'saida';
+ const amount = Number(input.amount);
+ assert(amount > 0, 400, 'Informe um valor maior que zero.', 'invalid_amount');
+ assert(String(input.title || '').trim().length >= 3, 400, 'Descreva o lançamento.', 'invalid_title');
+
+ const entry = commit((data) => {
+ const record = {
+ id: nextId('cf'),
+ type,
+ title: String(input.title).trim(),
+ category: CATEGORY_LABELS[input.category] ? input.category : 'outros',
+ amount: Number(amount.toFixed(2)),
+ date: input.date ? new Date(input.date).toISOString() : nowIso(),
+ notes: String(input.notes || '').trim(),
+ orderId: input.orderId || undefined,
+ actor
+ };
+ data.cashflow.unshift(record);
+ return record;
+ }, { event: 'cashflow.created', payload: { type, amount } });
+
+ notify({
+ type: type === 'entrada' ? 'cash_in' : 'cash_out',
+ title: `${type === 'entrada' ? ' Entrada' : ' Saída'} financeira — ${brl(amount)}`,
+ detail: `${entry.title} • ${CATEGORY_LABELS[entry.category]} • por ${actor}`,
+ severity: type === 'entrada' ? 'success' : 'warning',
+ meta: {
+ entryId: entry.id,
+ title: entry.title,
+ category: entry.category,
+ categoryLabel: CATEGORY_LABELS[entry.category],
+ amount: entry.amount,
+ notes: entry.notes,
+ actor
+ }
+ });
+
+ return entry;
+}
+
+export function deleteCashflowEntry(id, { actor = 'painel' } = {}) {
+ const existing = db().cashflow.find((entry) => entry.id === id);
+ if (!existing) throw new HttpError(404, 'Lançamento não encontrado.', 'not_found');
+ commit((data) => {
+ data.cashflow = data.cashflow.filter((entry) => entry.id !== id);
+ }, { event: 'cashflow.deleted', payload: { id } });
+ notify({
+ type: 'cash_out',
+ title: '️ Lançamento excluído',
+ detail: `${existing.title} • ${brl(existing.amount)} • por ${actor}`,
+ severity: 'info',
+ meta: { entryId: id, title: existing.title, amount: existing.amount, actor }
+ });
+ return { ok: true };
+}
+
+export function listCashflow({ limit = 200, type = null } = {}) {
+ return db()
+ .cashflow.filter((entry) => !type || entry.type === type)
+ .sort((a, b) => new Date(b.date) - new Date(a.date))
+ .slice(0, limit);
+}
+
+function sum(values) {
+ return values.reduce((total, value) => total + Number(value || 0), 0);
+}
+
+export function financialSummary() {
+ const data = db();
+ const orders = data.orders;
+ const confirmed = orders.filter((order) => order.paymentStatus === 'confirmado');
+ const pending = orders.filter((order) => order.paymentStatus === 'pendente');
+ const cancelled = orders.filter((order) => order.paymentStatus === 'cancelado');
+
+ const revenue = sum(confirmed.map((order) => order.total));
+ const expenses = sum(data.cashflow.filter((entry) => entry.type === 'saida').map((entry) => entry.amount));
+ const manualIncome = sum(
+ data.cashflow.filter((entry) => entry.type === 'entrada' && entry.category !== 'venda').map((entry) => entry.amount)
+ );
+
+ const today = new Date();
+ today.setHours(0, 0, 0, 0);
+ const week = new Date(Date.now() - 7 * 864e5);
+ const month = new Date(Date.now() - 30 * 864e5);
+
+ const paidInRange = (from) =>
+ sum(confirmed.filter((order) => new Date(order.createdAt).getTime() >= from.getTime()).map((order) => order.total));
+
+ return {
+ revenue,
+ pendingRevenue: sum(pending.map((order) => order.total)),
+ cancelledRevenue: sum(cancelled.map((order) => order.total)),
+ expenses,
+ manualIncome,
+ netProfit: revenue + manualIncome - expenses,
+ todayEarnings: paidInRange(today),
+ weekEarnings: paidInRange(week),
+ monthEarnings: paidInRange(month),
+ averageTicket: confirmed.length ? revenue / confirmed.length : 0,
+ confirmedCount: confirmed.length,
+ pendingCount: pending.length,
+ cancelledCount: cancelled.length,
+ ordersCount: orders.length,
+ conversionRate: orders.length ? (confirmed.length / orders.length) * 100 : 0
+ };
+}
+
+export function dashboardMetrics() {
+ const data = db();
+ const summary = financialSummary();
+ const now = Date.now();
+
+ const carts = data.carts.filter((cart) => cart.itemsCount > 0);
+ const abandoned = carts.filter((cart) => cart.status === 'abandoned');
+ const activeCarts = carts.filter((cart) => cart.status === 'active');
+
+ const stockUnits = data.products.reduce(
+ (total, product) => total + Object.values(product.inventory || {}).reduce((sum2, value) => sum2 + Number(value || 0), 0),
+ 0
+ );
+ const stockValue = data.products.reduce((total, product) => {
+ const units = Object.values(product.inventory || {}).reduce((sum2, value) => sum2 + Number(value || 0), 0);
+ return total + units * Number(product.costPrice || 0);
+ }, 0);
+
+ const criticalVariants = [];
+ for (const product of data.products) {
+ for (const [variantKey, value] of Object.entries(product.inventory || {})) {
+ if (Number(value) <= config.lowStockThreshold) {
+ criticalVariants.push({ productId: product.id, name: product.name, variantKey, stock: Number(value) });
+ }
+ }
+ }
+
+ // Série de faturamento dos últimos 14 dias (somente pagamentos confirmados)
+ const revenueByDay = [];
+ for (let offset = 13; offset >= 0; offset -= 1) {
+ const day = new Date(now - offset * 864e5);
+ const key = day.toISOString().slice(0, 10);
+ const total = sum(
+ data.orders
+ .filter((order) => order.paymentStatus === 'confirmado' && order.createdAt.slice(0, 10) === key)
+ .map((order) => order.total)
+ );
+ revenueByDay.push({ day: key, total });
+ }
+
+ const productSales = new Map();
+ for (const order of data.orders.filter((entry) => entry.paymentStatus !== 'cancelado')) {
+ for (const item of order.items) {
+ const current = productSales.get(item.productId) || { name: item.name, units: 0, revenue: 0 };
+ current.units += item.quantity;
+ current.revenue += item.quantity * item.price;
+ productSales.set(item.productId, current);
+ }
+ }
+ const topProducts = [...productSales.entries()]
+ .map(([productId, value]) => ({ productId, ...value }))
+ .sort((a, b) => b.revenue - a.revenue)
+ .slice(0, 5);
+
+ const customers30d = data.customers.filter((customer) => now - new Date(customer.createdAt).getTime() <= 30 * 864e5);
+
+ return {
+ ...summary,
+ ordersToday: data.orders.filter((order) => order.createdAt.slice(0, 10) === new Date().toISOString().slice(0, 10)).length,
+ customersCount: data.customers.length,
+ newCustomers30d: customers30d.length,
+ productsCount: data.products.length,
+ stockUnits,
+ stockValue,
+ stockValueLabel: brl(stockValue),
+ criticalStockCount: criticalVariants.length,
+ criticalStock: criticalVariants.slice(0, 8),
+ cartsActive: activeCarts.length,
+ cartsActiveValue: sum(activeCarts.map((cart) => cart.subtotal)),
+ cartsAbandoned: abandoned.length,
+ cartsAbandonedValue: sum(abandoned.map((cart) => cart.subtotal)),
+ revenueByDay,
+ topProducts,
+ revenueLabel: brl(summary.revenue),
+ netProfitLabel: brl(summary.netProfit),
+ expensesLabel: brl(summary.expenses),
+ averageTicketLabel: brl(summary.averageTicket),
+ unpaidOver24h: data.orders.filter(
+ (order) => order.paymentStatus === 'pendente' && now - new Date(order.createdAt).getTime() > 864e5
+ ).length,
+ generatedAt: nowIso(),
+ currency: 'BRL'
+ };
+}
+
+export function clearTestData({ actor = 'painel' } = {}) {
+  commit((data) => {
+    data.orders = [];
+    data.cashflow = [];
+    data.carts = [];
+    data.orderSeq = 1000;
+    data.counters = {
+      ordersCreated: 0,
+      ordersPaid: 0,
+      cartsAbandoned: 0,
+      accountsCreated: data.customers ? data.customers.length : 0,
+      stockIn: 0,
+      stockOut: 0
+    };
+    data.auditLog.unshift({
+      id: nextId('aud'),
+      at: nowIso(),
+      actor,
+      action: 'finance.reset_test_data',
+      detail: 'Métricas e pedidos de teste zerados para operação 100% real.'
+    });
+  });
+  return { ok: true, message: 'Dados de teste zerados com sucesso. Painel pronto para vendas reais.' };
+}
+
+export { CATEGORY_LABELS };
