@@ -242,6 +242,7 @@ export const adminApi = {
   contactCart: (id: string) => adminRequest<{ cart: any }>(`/carts/${id}/contacted`, { method: 'POST' }),
 
   customers: (search = '') => adminRequest<{ customers: any[] }>(`/customers${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  customer: (id: string) => adminRequest<{ customer: any }>(`/customers/${id}`),
   reviews: () => adminRequest<{ reviews: any[] }>('/reviews'),
 
   coupons: () => adminRequest<{ coupons: Coupon[] }>('/coupons'),

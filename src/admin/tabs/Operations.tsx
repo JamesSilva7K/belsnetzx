@@ -17,7 +17,14 @@ import {
   Trash2,
   UserRound,
   Users,
-  Wallet
+  Wallet,
+  Copy,
+  Check,
+  CreditCard,
+  QrCode,
+  Filter,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 import type { Order } from '../../types';
@@ -599,7 +606,7 @@ export function CustomersTab({ liveKey }: { liveKey: number }) {
                 <Td className="text-xs text-stone-500">{formatDate(customer.lastLoginAt)}</Td>
                 <Td>
                   <Button size="sm" variant="ghost" onClick={() => setSelectedCustomer(customer)}>
-                    Ver Perfil
+                    Ver Perfil & Compras
                   </Button>
                 </Td>
               </tr>
@@ -608,57 +615,522 @@ export function CustomersTab({ liveKey }: { liveKey: number }) {
         )}
       </Card>
 
-      <Modal
-        open={Boolean(selectedCustomer)}
-        onClose={() => setSelectedCustomer(null)}
-        title={selectedCustomer ? selectedCustomer.fullName : ''}
-        subtitle={selectedCustomer ? `Cliente ID: ${selectedCustomer.id} · Cadastrada em ${formatDate(selectedCustomer.createdAt)}` : ''}
-        wide
-      >
-        {selectedCustomer && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Stat label="Total de Pedidos" value={selectedCustomer.ordersCount} />
-              <Stat label="Total Gasto" value={formatBRL(selectedCustomer.totalSpent)} tone="good" />
-              <Stat label="Último Login" value={selectedCustomer.lastLoginAt ? formatDate(selectedCustomer.lastLoginAt) : '—'} />
-              <Stat label="Status da Conta" value="Ativa & Verificada" tone="rose" />
+      {selectedCustomer && (
+        <CustomerProfileModal
+          customerSummary={selectedCustomer}
+          onClose={() => setSelectedCustomer(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function CustomerProfileModal({
+  customerSummary,
+  onClose
+}: {
+  customerSummary: any;
+  onClose: () => void;
+}) {
+  const { data, loading } = useLoad(
+    () => adminApi.customer(customerSummary.id),
+    [customerSummary.id]
+  );
+  const customer = data?.customer || customerSummary;
+
+  // Filtros avançados para as compras da cliente
+  const [search, setSearch] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [sortFilter, setSortFilter] = useState('recente');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+
+  const rawOrders: any[] = customer?.orders || [];
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(text);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const filteredOrders = useMemo(() => {
+    return rawOrders
+      .filter((ord: any) => {
+        if (search.trim()) {
+          const q = search.trim().toLowerCase();
+          const matchId = ord.id.toLowerCase().includes(q);
+          const matchItem = (ord.items || []).some((it: any) => it.name.toLowerCase().includes(q));
+          if (!matchId && !matchItem) return false;
+        }
+
+        if (paymentFilter !== 'all') {
+          if (ord.paymentMethod !== paymentFilter) return false;
+        }
+
+        if (statusFilter !== 'all') {
+          if (ord.orderStatus !== statusFilter) return false;
+        }
+
+        if (dateFilter !== 'all') {
+          const orderTime = new Date(ord.createdAt).getTime();
+          const now = Date.now();
+          if (dateFilter === '7d' && now - orderTime > 7 * 864e5) return false;
+          if (dateFilter === '30d' && now - orderTime > 30 * 864e5) return false;
+          if (dateFilter === '90d' && now - orderTime > 90 * 864e5) return false;
+          if (dateFilter === 'year' && new Date(ord.createdAt).getFullYear() !== new Date().getFullYear()) return false;
+        }
+
+        const min = parseFloat(priceMin);
+        if (!isNaN(min) && min > 0 && ord.total < min) return false;
+        const max = parseFloat(priceMax);
+        if (!isNaN(max) && max > 0 && ord.total > max) return false;
+
+        return true;
+      })
+      .sort((a: any, b: any) => {
+        if (sortFilter === 'maior_valor') return b.total - a.total;
+        if (sortFilter === 'menor_valor') return a.total - b.total;
+        if (sortFilter === 'antigo') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+  }, [rawOrders, search, paymentFilter, statusFilter, dateFilter, sortFilter, priceMin, priceMax]);
+
+  const hasActiveFilters = Boolean(
+    search.trim() ||
+      paymentFilter !== 'all' ||
+      statusFilter !== 'all' ||
+      dateFilter !== 'all' ||
+      sortFilter !== 'recente' ||
+      priceMin ||
+      priceMax
+  );
+
+  const clearFilters = () => {
+    setSearch('');
+    setPaymentFilter('all');
+    setStatusFilter('all');
+    setDateFilter('all');
+    setSortFilter('recente');
+    setPriceMin('');
+    setPriceMax('');
+  };
+
+  const ticketMedio = customer.ordersCount > 0 ? customer.totalSpent / customer.ordersCount : 0;
+
+  return (
+    <Modal
+      open={true}
+      onClose={onClose}
+      title={customer.fullName}
+      subtitle={`Cliente ID: ${customer.id} · Cadastrada em ${formatDate(customer.createdAt)}`}
+      wide
+    >
+      <div className="space-y-5">
+        {/* Métricas da Cliente */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Total de Pedidos" value={customer.ordersCount || 0} />
+          <Stat label="Total Gasto" value={formatBRL(customer.totalSpent || 0)} tone="good" />
+          <Stat label="Ticket Médio" value={formatBRL(ticketMedio)} tone="good" />
+          <Stat label="Último Login" value={customer.lastLoginAt ? formatDate(customer.lastLoginAt) : '—'} />
+        </div>
+
+        {/* Informações Pessoais & Contato */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3.5 space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-subtle)]">Dados Cadastrais</p>
+            <p className="text-sm font-semibold text-[var(--admin-text-main)]">{customer.fullName}</p>
+            <p className="text-xs text-[var(--admin-text-muted)] font-mono-admin">CPF: {customer.cpf}</p>
+            <p className="text-xs text-[var(--admin-text-muted)] flex items-center gap-1.5">
+              <Mail className="h-3.5 w-3.5 text-stone-500" /> {customer.email}
+            </p>
+            <p className="text-xs text-[var(--admin-text-muted)] flex items-center gap-1.5">
+              <Phone className="h-3.5 w-3.5 text-stone-500" /> {customer.phone}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-3.5 space-y-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-subtle)]">Atendimento Direto</p>
+            <div className="flex flex-col gap-2 pt-1">
+              <a
+                href={`https://wa.me/55${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá, ${customer.fullName}! Aqui é da equipe Aura Rosa Boutique.`)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white py-2 px-3 text-xs font-semibold transition-all shadow-xs"
+              >
+                <span>Chamar no WhatsApp</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+
+              <a
+                href={`mailto:${customer.email}`}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 text-[var(--admin-text-main)] py-2 px-3 text-xs font-medium transition-all border border-[var(--admin-border)]"
+              >
+                <Mail className="h-3.5 w-3.5" />
+                <span>Enviar E-mail</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* HISTÓRICO DE COMPRAS DA CLIENTE COM FILTROS */}
+        <div className="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-4 space-y-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--admin-border)] pb-3">
+            <div>
+              <h4 className="text-sm font-semibold text-[var(--admin-text-main)] flex items-center gap-2">
+                <Package className="h-4 w-4 text-rose-400" />
+                <span>Histórico de Compras da Cliente</span>
+                <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-xs font-bold text-rose-400">
+                  {rawOrders.length}
+                </span>
+              </h4>
+              <p className="text-xs text-[var(--admin-text-muted)] mt-0.5">
+                Todas as compras já realizadas, detalhadas por produtos, preços e forma de pagamento.
+              </p>
+            </div>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-xs text-rose-400 hover:text-rose-300 underline font-medium cursor-pointer"
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
+
+          {/* Barra de Filtros Inteligentes */}
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+            {/* Busca por Produto ou ID */}
+            <div className="sm:col-span-2">
+              <label className="text-[10px] font-semibold uppercase text-[var(--admin-text-subtle)] block mb-1">
+                Buscar Produto ou Pedido
+              </label>
+              <div className="relative">
+                <Search className="h-3.5 w-3.5 text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Nome do produto, código #AUR ou ID..."
+                  className="pl-8 text-xs py-1.5"
+                />
+              </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-[#26262e] p-3.5 space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">Dados Pessoais</p>
-                <p className="text-sm font-medium text-stone-200">{selectedCustomer.fullName}</p>
-                <p className="text-xs text-stone-400 font-mono-admin">CPF: {selectedCustomer.cpf}</p>
-                <p className="text-xs text-stone-400 flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 text-stone-500" /> {selectedCustomer.email}</p>
-                <p className="text-xs text-stone-400 flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-stone-500" /> {selectedCustomer.phone}</p>
+            {/* Forma de Pagamento */}
+            <div>
+              <label className="text-[10px] font-semibold uppercase text-[var(--admin-text-subtle)] block mb-1">
+                Forma de Pagamento
+              </label>
+              <Select
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+                className="text-xs py-1.5"
+              >
+                <option value="all">Todas as Formas</option>
+                <option value="pix">PIX</option>
+                <option value="credit_card">Cartão de Crédito</option>
+                <option value="boleto">Boleto Bancário</option>
+              </Select>
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="text-[10px] font-semibold uppercase text-[var(--admin-text-subtle)] block mb-1">
+                Status do Pedido
+              </label>
+              <Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="text-xs py-1.5"
+              >
+                <option value="all">Todos os Status</option>
+                <option value="pago">Pago / Confirmado</option>
+                <option value="em_separacao">Em Separação</option>
+                <option value="enviado">Enviado</option>
+                <option value="entregue">Entregue</option>
+                <option value="aguardando_pagamento">Aguardando Pagamento</option>
+                <option value="cancelado">Cancelado</option>
+              </Select>
+            </div>
+
+            {/* Período */}
+            <div>
+              <label className="text-[10px] font-semibold uppercase text-[var(--admin-text-subtle)] block mb-1">
+                Período / Data
+              </label>
+              <Select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="text-xs py-1.5"
+              >
+                <option value="all">Todo o Período</option>
+                <option value="7d">Últimos 7 dias</option>
+                <option value="30d">Últimos 30 dias</option>
+                <option value="90d">Últimos 90 dias</option>
+                <option value="year">Este ano</option>
+              </Select>
+            </div>
+
+            {/* Ordenação */}
+            <div>
+              <label className="text-[10px] font-semibold uppercase text-[var(--admin-text-subtle)] block mb-1">
+                Ordenar Por
+              </label>
+              <Select
+                value={sortFilter}
+                onChange={(e) => setSortFilter(e.target.value)}
+                className="text-xs py-1.5"
+              >
+                <option value="recente">Mais Recente</option>
+                <option value="antigo">Mais Antigo</option>
+                <option value="maior_valor">Maior Valor (R$)</option>
+                <option value="menor_valor">Menor Valor (R$)</option>
+              </Select>
+            </div>
+
+            {/* Faixa de Preço */}
+            <div className="sm:col-span-2 flex items-end gap-2">
+              <div className="flex-1">
+                <label className="text-[10px] font-semibold uppercase text-[var(--admin-text-subtle)] block mb-1">
+                  Preço Mínimo (R$)
+                </label>
+                <Input
+                  type="number"
+                  placeholder="0,00"
+                  value={priceMin}
+                  onChange={(e) => setPriceMin(e.target.value)}
+                  className="text-xs py-1.5"
+                />
               </div>
-
-              <div className="rounded-xl border border-[#26262e] p-3.5 space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">Ações Rápidas de Atendimento</p>
-                <div className="flex flex-col gap-2 pt-1">
-                  <a
-                    href={`https://wa.me/55${selectedCustomer.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá, ${selectedCustomer.fullName}! Aqui é da equipe Flor de Seda.`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white py-2 px-3 text-xs font-semibold transition-all shadow-xs"
-                  >
-                    <span>Falar no WhatsApp</span>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-
-                  <a
-                    href={`mailto:${selectedCustomer.email}`}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-200 py-2 px-3 text-xs font-medium transition-all border border-white/10"
-                  >
-                    <Mail className="h-3.5 w-3.5" />
-                    <span>Enviar E-mail</span>
-                  </a>
-                </div>
+              <div className="flex-1">
+                <label className="text-[10px] font-semibold uppercase text-[var(--admin-text-subtle)] block mb-1">
+                  Preço Máximo (R$)
+                </label>
+                <Input
+                  type="number"
+                  placeholder="Ex: 500,00"
+                  value={priceMax}
+                  onChange={(e) => setPriceMax(e.target.value)}
+                  className="text-xs py-1.5"
+                />
               </div>
             </div>
           </div>
-        )}
-      </Modal>
-    </div>
+
+          {/* Contador de Pedidos Filtrados */}
+          <div className="flex items-center justify-between text-xs text-[var(--admin-text-muted)] pt-1">
+            <span>
+              Exibindo <strong className="text-[var(--admin-text-main)]">{filteredOrders.length}</strong> de <strong className="text-[var(--admin-text-main)]">{rawOrders.length}</strong> compras
+            </span>
+          </div>
+
+          {/* Lista de Compras */}
+          {loading ? (
+            <Spinner label="Carregando compras da cliente..." />
+          ) : filteredOrders.length === 0 ? (
+            <div className="p-6 rounded-xl border border-dashed border-[var(--admin-border)] text-center text-xs text-[var(--admin-text-muted)]">
+              {hasActiveFilters
+                ? 'Nenhuma compra encontrada para os filtros selecionados.'
+                : 'Esta cliente ainda não possui compras registradas.'}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredOrders.map((ord: any) => {
+                const isExpanded = expandedOrderId === ord.id;
+                const isPaid = ord.paymentStatus === 'confirmado' || ord.orderStatus === 'pago';
+                const isPix = ord.paymentMethod === 'pix';
+
+                return (
+                  <div
+                    key={ord.id}
+                    className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card-bg)] shadow-xs overflow-hidden"
+                  >
+                    {/* Cabeçalho do Pedido */}
+                    <div className="p-3.5 bg-black/5 dark:bg-white/[0.02] border-b border-[var(--admin-border)] flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono-admin font-bold text-[var(--admin-text-main)]">
+                            {ord.id}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(ord.id)}
+                            className="p-1 rounded text-[var(--admin-text-muted)] hover:text-[var(--admin-text-main)]"
+                            title="Copiar ID do pedido"
+                          >
+                            {copiedId === ord.id ? (
+                              <Check className="h-3 w-3 text-emerald-400" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-[var(--admin-text-muted)] mt-0.5 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{formatDate(ord.createdAt)}</span>
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Selo Forma de Pagamento */}
+                        {isPix ? (
+                          <Badge tone="good">
+                            <QrCode className="h-3 w-3 mr-0.5" /> PIX
+                          </Badge>
+                        ) : (
+                          <Badge tone="info">
+                            <CreditCard className="h-3 w-3 mr-0.5" /> Cartão
+                          </Badge>
+                        )}
+
+                        {/* Selo Status */}
+                        <Badge
+                          tone={
+                            ord.orderStatus === 'entregue'
+                              ? 'good'
+                              : ord.orderStatus === 'enviado'
+                              ? 'info'
+                              : ord.orderStatus === 'em_separacao'
+                              ? 'rose'
+                              : isPaid
+                              ? 'good'
+                              : 'warn'
+                          }
+                        >
+                          {ord.orderStatus.replace(/_/g, ' ')}
+                        </Badge>
+
+                        <span className="font-semibold text-sm text-emerald-400 tabular-nums ml-2">
+                          {formatBRL(ord.total)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Rastreio dos Correios (se houver) */}
+                    {ord.trackingCode && (
+                      <div className="px-3.5 py-1.5 bg-sky-500/10 border-b border-sky-500/20 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-sky-400">
+                          <Truck className="h-3.5 w-3.5" />
+                          <span>Rastreio:</span>
+                          <strong className="font-mono-admin text-[var(--admin-text-main)]">{ord.trackingCode}</strong>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(ord.trackingCode)}
+                            className="text-[11px] text-sky-400 hover:text-sky-300 font-medium cursor-pointer"
+                          >
+                            {copiedId === ord.trackingCode ? 'Copiado!' : 'Copiar'}
+                          </button>
+                          <a
+                            href={`https://rastreamento.correios.com.br/app/index.php?codigo=${ord.trackingCode}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-0.5"
+                          >
+                            <span>Abrir</span>
+                            <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Itens Comprados */}
+                    <div className="p-3.5 space-y-2">
+                      {(ord.items || []).map((item: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between gap-3 text-xs">
+                          <div className="flex items-center gap-2.5">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="h-10 w-9 rounded-lg object-cover border border-[var(--admin-border)] shrink-0"
+                              />
+                            ) : (
+                              <div className="h-10 w-9 rounded-lg bg-stone-500/10 border border-[var(--admin-border)] flex items-center justify-center shrink-0">
+                                <Package className="h-4 w-4 text-stone-500" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-[var(--admin-text-main)]">{item.name}</p>
+                              <p className="text-[11px] text-[var(--admin-text-muted)]">
+                                {item.quantity}× {formatBRL(item.price)}
+                                {item.selectedSize ? ` · Tam: ${item.selectedSize}` : ''}
+                                {item.selectedColor?.name ? ` · Cor: ${item.selectedColor.name}` : ''}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="font-medium text-[var(--admin-text-main)] tabular-nums">
+                            {formatBRL(item.price * item.quantity)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Rodapé com detalhes expansíveis */}
+                    <div className="px-3.5 py-2 bg-black/5 dark:bg-white/[0.01] border-t border-[var(--admin-border)] flex items-center justify-between text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedOrderId(isExpanded ? null : ord.id)}
+                        className="text-[11px] text-rose-400 hover:text-rose-300 font-medium flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>{isExpanded ? 'Ocultar detalhes' : 'Ver detalhamento financeiro & entrega'}</span>
+                        {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      </button>
+
+                      <span className="text-[11px] text-[var(--admin-text-muted)]">
+                        {ord.items?.length || 0} {(ord.items?.length || 0) === 1 ? 'item' : 'itens'}
+                      </span>
+                    </div>
+
+                    {/* Área Expandida com endereço e resumo */}
+                    {isExpanded && (
+                      <div className="p-3.5 bg-black/10 dark:bg-white/[0.02] border-t border-[var(--admin-border)] text-xs space-y-2">
+                        <div className="grid sm:grid-cols-2 gap-2 text-[11px] text-[var(--admin-text-muted)] pb-2 border-b border-[var(--admin-border)]">
+                          <div>
+                            <span className="text-[10px] font-semibold uppercase text-[var(--admin-text-subtle)] block">Entrega</span>
+                            <p>{ord.lead?.street}, {ord.lead?.number} {ord.lead?.complement ? `· ${ord.lead.complement}` : ''}</p>
+                            <p>{ord.lead?.neighborhood} · {ord.lead?.city}/{ord.lead?.state} · CEP {ord.lead?.cep}</p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-semibold uppercase text-[var(--admin-text-subtle)] block">Envio</span>
+                            <p>{ord.shippingMethod || 'PAC'}</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1 text-xs max-w-xs ml-auto text-[var(--admin-text-muted)]">
+                          <div className="flex justify-between">
+                            <span>Subtotal:</span>
+                            <span className="text-[var(--admin-text-main)]">{formatBRL(ord.subtotal)}</span>
+                          </div>
+                          {ord.discount > 0 && (
+                            <div className="flex justify-between text-emerald-400">
+                              <span>Desconto:</span>
+                              <span>-{formatBRL(ord.discount)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span>Frete:</span>
+                            <span className="text-[var(--admin-text-main)]">{ord.shippingCost > 0 ? formatBRL(ord.shippingCost) : 'Grátis'}</span>
+                          </div>
+                          <div className="flex justify-between font-semibold text-[var(--admin-text-main)] pt-1 border-t border-[var(--admin-border)]">
+                            <span>Total Final:</span>
+                            <span className="text-emerald-400">{formatBRL(ord.total)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </Modal>
   );
 }
