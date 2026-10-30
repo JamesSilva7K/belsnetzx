@@ -53,10 +53,10 @@ export const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 w-full transition-all shadow-xs">
       {/* 1. TOP BAR (White / Off-White delicate bar) */}
-      <div className="bg-[#FAF7F8] border-b border-rose-100/60 text-[11px] sm:text-xs text-stone-600 py-1.5 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="bg-[#FAF7F8] border-b border-rose-100/60 text-[10px] sm:text-xs text-stone-600 py-1 sm:py-1.5 px-3 sm:px-8 w-full max-w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 w-full min-w-0">
           {/* Social Icons */}
-          <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
             <a 
               href="https://instagram.com" 
               target="_blank" 
@@ -78,7 +78,7 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Center Message */}
-          <div className="flex items-center justify-center gap-1.5 text-center font-normal tracking-wide text-stone-700">
+          <div className="flex-1 flex items-center justify-center gap-1.5 text-center font-normal tracking-wide text-stone-700 truncate">
             <IconSparkle size={12} className="text-[#C66382]" />
             <span>Seja bem-vinda e boas compras</span>
             <HeartHandshake className="h-3 w-3 text-[#C66382]" />
@@ -92,7 +92,7 @@ export const Header: React.FC = () => {
       </div>
 
       {/* 2. MAIN HEADER (Signature Flor de Seda Rose #DC7898) */}
-      <div className="bg-[#DC7898] text-white px-3 sm:px-8 py-2.5 sm:py-3.5">
+      <div className="bg-[#DC7898] text-white px-3 sm:px-8 py-2.5 sm:py-3.5 w-full max-w-full overflow-hidden">
         <div className="max-w-7xl mx-auto">
           {/* Top Row: Menu + Logo + Desktop Search + Actions */}
           <div className="flex items-center justify-between gap-2 sm:gap-6">

@@ -68,39 +68,39 @@ export const ProductGrid: React.FC = () => {
   return (
     <section 
       id="destaques-section" 
-      className="py-12 sm:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28"
+      className="py-8 sm:py-16 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 scroll-mt-28 w-full max-w-full overflow-hidden"
     >
       <div id="catalogo-section" className="scroll-mt-28" />
 
       {/* Title Destaques in Serif font matching Flor de Seda branding */}
-      <div className="text-center mb-10">
+      <div className="text-center mb-6 sm:mb-10 px-2 w-full max-w-full">
         <span 
-          className="text-xs font-semibold uppercase tracking-[0.25em] inline-flex items-center gap-1.5 mb-1"
+          className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.2em] sm:tracking-[0.25em] inline-flex items-center gap-1.5 mb-1"
           style={{ color: customization.primaryColor }}
         >
           <Sparkles className="w-3.5 h-3.5" style={{ color: customization.primaryColor }} />
           {selectedCategory === 'Novidades' ? 'Lançamentos Exclusivos' : 'Curadoria Especial'}
         </span>
-        <h2 className="font-serif text-3xl sm:text-4xl text-[#2D2427] font-medium tracking-tight">
+        <h2 className="font-serif text-2xl sm:text-4xl text-[#2D2427] font-medium tracking-tight">
           {selectedCategory === 'Novidades' ? 'Novidades da Estação' : selectedCategory === 'Todos' ? 'Destaques' : selectedCategory}
         </h2>
         <div 
-          className="w-12 h-[2.5px] mx-auto mt-2.5 rounded-full"
+          className="w-12 h-[2.5px] mx-auto mt-2 rounded-full"
           style={{ backgroundColor: customization.primaryColor }}
         />
         {selectedCategory === 'Novidades' && (
-          <p className="text-xs text-stone-500 mt-2 font-light">
+          <p className="text-xs text-stone-500 mt-2 font-light max-w-md mx-auto">
             Coleção recém-chegada com tecidos nobres, fluidez e acabamentos delicados.
           </p>
         )}
       </div>
 
       {/* Filter and Sorting Bar - Stable non-shifting layout */}
-      <div className="bg-white/70 backdrop-blur-xs border border-rose-100 rounded-3xl p-3 sm:p-4 mb-8 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div className="bg-white/70 backdrop-blur-xs border border-rose-100 rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 mb-6 sm:mb-8 shadow-xs w-full max-w-full overflow-hidden">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3 w-full min-w-0 max-w-full">
           
-          {/* Category Pills (fixed dimensions, flex-shrink-0 to avoid button shifting on click) */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 lg:pb-0 scrollbar-none no-scrollbar flex-nowrap w-full lg:w-auto touch-pan-x">
+          {/* Category Pills (horizontally scrollable on mobile without pushing parent width) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 lg:pb-0 scrollbar-none no-scrollbar flex-nowrap w-full min-w-0 max-w-full touch-pan-x">
             {categories.map((cat) => {
               const isSelected = selectedCategory === cat;
               return (
@@ -126,15 +126,15 @@ export const ProductGrid: React.FC = () => {
           </div>
 
           {/* Quick Sorting Dropdown */}
-          <div className="flex items-center justify-between lg:justify-end gap-2.5 pt-2 lg:pt-0 border-t lg:border-t-0 border-rose-100 flex-shrink-0">
-            <span className="text-xs text-stone-500 whitespace-nowrap font-medium flex items-center gap-1">
+          <div className="flex items-center justify-between lg:justify-end gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-rose-100 flex-shrink-0 w-full lg:w-auto">
+            <span className="text-[11px] sm:text-xs text-stone-500 whitespace-nowrap font-medium flex items-center gap-1">
               <SlidersHorizontal className="w-3.5 h-3.5 text-[#DC7898]" />
               <span>Ordenar:</span>
             </span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-white border border-rose-200 text-stone-700 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#DC7898]/40 focus:border-[#DC7898] shadow-2xs cursor-pointer"
+              className="bg-white border border-rose-200 text-stone-700 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#DC7898]/40 focus:border-[#DC7898] shadow-2xs cursor-pointer"
             >
               <option value="destaque">Mais Vendidos</option>
               <option value="novidades">Lançamentos</option>
@@ -147,21 +147,21 @@ export const ProductGrid: React.FC = () => {
 
       {/* Search active notice */}
       {searchQuery && (
-        <div className="mb-6 flex items-center justify-between p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-[#DC7898]">
-          <span>
+        <div className="mb-6 flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-[#DC7898] w-full max-w-full">
+          <span className="truncate mr-2">
             Exibindo resultados para: <strong className="text-stone-900">"{searchQuery}"</strong> ({sortedProducts.length} itens)
           </span>
           <button
             onClick={() => setSearchQuery('')}
-            className="text-xs font-semibold underline text-stone-700 hover:text-black"
+            className="text-xs font-semibold underline text-stone-700 hover:text-black flex-shrink-0"
           >
             Limpar busca
           </button>
         </div>
       )}
 
-      {/* Products Grid: 4 columns matching Flor de Seda with min-h to prevent layout jumps */}
-      <div className="min-h-[500px]">
+      {/* Products Grid: 2 columns on mobile, 3 on md, 4 on lg */}
+      <div className="min-h-[400px] w-full max-w-full">
         {error ? (
           <div className="text-center py-16 px-4 bg-white rounded-3xl border border-rose-200 max-w-md mx-auto my-8">
             <AlertCircle className="w-10 h-10 text-rose-400 mx-auto mb-3" />
@@ -177,7 +177,7 @@ export const ProductGrid: React.FC = () => {
         ) : loading && products.length === 0 ? (
           <div className="text-center py-20 text-stone-400 text-xs">Carregando peças da coleção…</div>
         ) : sortedProducts.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-7 animate-fade-in">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-6 lg:gap-7 animate-fade-in w-full max-w-full">
             {sortedProducts.map((prod) => (
               <ProductCard key={prod.id} product={prod} />
             ))}

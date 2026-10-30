@@ -24,7 +24,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   return (
     <div 
-      className="group flex flex-col cursor-pointer transition-all duration-300"
+      className="group flex flex-col cursor-pointer transition-all duration-300 w-full min-w-0 max-w-full select-none"
       onClick={() => setSelectedProductDetail(product)}
     >
       {/* 1. Image Container with generous rounded corners like reference */}
@@ -57,15 +57,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       </div>
 
       {/* 2. Product Details - Centered Typography like Reference Image */}
-      <div className="pt-3 pb-1 flex flex-col items-center text-center">
+      <div className="pt-2 sm:pt-3 pb-1 flex flex-col items-center text-center w-full min-w-0 px-1">
         
         {/* Title */}
-        <h3 className="font-sans text-[11.5px] sm:text-sm font-medium text-stone-800 line-clamp-1 group-hover:text-[#DC7898] transition-colors px-1">
+        <h3 className="font-sans text-[11.5px] sm:text-sm font-medium text-stone-800 truncate w-full group-hover:text-[#DC7898] transition-colors">
           {product.name}
         </h3>
 
         {/* Color Swatch Dots */}
-        <div className="flex items-center justify-center gap-1.5 my-1.5">
+        <div className="flex items-center justify-center gap-1 sm:gap-1.5 my-1 sm:my-1.5 max-w-full overflow-hidden">
           {product.colors.map((color, idx) => (
             <button
               key={color.name}
@@ -75,7 +75,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 setSelectedColorIndex(idx);
               }}
               title={color.name}
-              className={`w-3.5 h-3.5 rounded-full border transition-all ${
+              className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border transition-all ${
                 idx === selectedColorIndex 
                   ? 'ring-1.5 ring-[#DC7898] ring-offset-1 scale-110' 
                   : 'border-stone-300 opacity-80 hover:opacity-100'
@@ -86,9 +86,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
 
         {/* Pricing Line: R$ 239,90  R$ 189,90 */}
-        <div className="flex items-baseline justify-center gap-1.5 sm:gap-2">
+        <div className="flex items-baseline justify-center gap-1.5 sm:gap-2 flex-wrap">
           {product.compareAtPrice && (
-            <span className="text-xs text-stone-400 line-through">
+            <span className="text-[11px] sm:text-xs text-stone-400 line-through">
               {formatCurrency(product.compareAtPrice)}
             </span>
           )}
@@ -98,8 +98,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
 
         {/* Installment Line: 3x de R$ 63,30 sem juros */}
-        <p className="text-[11px] text-stone-500 font-normal mt-0.5">
-          3x de <strong className="text-stone-700 font-semibold">{formatCurrency(installmentValue)}</strong> sem juros
+        <p className="text-[9.5px] sm:text-xs text-stone-500 font-light mt-0.5 truncate w-full">
+          3x de {formatCurrency(installmentValue)} sem juros
         </p>
       </div>
     </div>

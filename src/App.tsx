@@ -22,7 +22,7 @@ function StorefrontBody() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FFF9FA] text-stone-800 font-sans selection:bg-rose-200 selection:text-rose-950">
+    <div className="min-h-screen flex flex-col bg-[#FFF9FA] text-stone-800 font-sans selection:bg-rose-200 selection:text-rose-950 w-full max-w-full overflow-x-hidden">
       <Header />
       <HeroBannerSlider />
       <FeaturesBanner />

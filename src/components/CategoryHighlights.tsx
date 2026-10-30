@@ -48,27 +48,27 @@ export const CategoryHighlights: React.FC = () => {
   };
 
   return (
-    <section className="py-8 sm:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-10">
+    <section className="py-6 sm:py-16 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-4 sm:mb-10 px-1">
         <div>
-          <span className="text-xs uppercase font-semibold text-rose-500 tracking-[0.2em]">Curadoria Exclusiva</span>
-          <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-stone-900 font-medium mt-1">
+          <span className="text-[10px] sm:text-xs uppercase font-semibold text-rose-500 tracking-[0.2em]">Curadoria Exclusiva</span>
+          <h2 className="font-serif text-xl sm:text-3xl lg:text-4xl text-stone-900 font-medium mt-0.5 sm:mt-1">
             Categorias em Destaque
           </h2>
         </div>
-        <p className="text-stone-500 text-sm max-w-md mt-2 sm:mt-0 font-light">
+        <p className="text-stone-500 text-xs sm:text-sm max-w-md mt-1 sm:mt-0 font-light">
           Peças confeccionadas com tecidos premium, pensadas para valorizar sua feminilidade em qualquer ocasião.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-6 w-full max-w-full">
         {CATEGORY_CARDS.map((cat) => {
           const count = products.filter(p => p.category === cat.name).length;
           return (
             <button
               key={cat.name}
               onClick={() => handleSelect(cat.name)}
-              className="group relative h-56 sm:h-80 lg:h-96 rounded-2xl sm:rounded-3xl overflow-hidden text-left focus:outline-none shadow-sm hover:shadow-xl transition-all duration-500"
+              className="group relative h-52 sm:h-80 lg:h-96 rounded-2xl sm:rounded-3xl overflow-hidden text-left focus:outline-none shadow-sm hover:shadow-xl transition-all duration-500 w-full min-w-0 max-w-full select-none"
             >
               {/* Background Image */}
               <img
@@ -86,8 +86,8 @@ export const CategoryHighlights: React.FC = () => {
                   {count} {count === 1 ? 'modelo' : 'modelos'}
                 </span>
                 <h3 className="font-serif text-xs sm:text-xl lg:text-2xl font-medium leading-snug text-white mb-1 sm:mb-1.5 flex items-center justify-between">
-                  <span>{cat.label}</span>
-                  <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-colors shrink-0 ml-1">
+                  <span className="truncate pr-1">{cat.label}</span>
+                  <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-colors shrink-0">
                     <ArrowUpRight className="w-2.5 h-2.5 sm:w-4 sm:h-4" />
                   </div>
                 </h3>
