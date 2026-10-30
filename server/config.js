@@ -14,7 +14,8 @@ dotenv.config({ path: ['.env.local', '.env'], quiet: true });
 
 export const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 const defaultDataDir = process.env.VERCEL ? '/tmp/aura-data' : 'server/data';
-export const DATA_DIR = path.resolve(ROOT_DIR, process.env.DATA_DIR || defaultDataDir);
+const rawDataDir = process.env.DATA_DIR || defaultDataDir;
+export const DATA_DIR = path.isAbsolute(rawDataDir) ? rawDataDir : path.resolve(ROOT_DIR, rawDataDir);
 try {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 } catch {}

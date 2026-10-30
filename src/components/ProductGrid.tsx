@@ -100,7 +100,7 @@ export const ProductGrid: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           
           {/* Category Pills (fixed dimensions, flex-shrink-0 to avoid button shifting on click) */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 lg:pb-0 scrollbar-none no-scrollbar flex-nowrap w-full lg:w-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 lg:pb-0 scrollbar-none no-scrollbar flex-nowrap w-full lg:w-auto touch-pan-x">
             {categories.map((cat) => {
               const isSelected = selectedCategory === cat;
               return (
@@ -112,7 +112,7 @@ export const ProductGrid: React.FC = () => {
                     if (cat === 'Novidades') setSortBy('novidades');
                   }}
                   style={isSelected ? { backgroundColor: customization.primaryColor, borderColor: customization.primaryColor } : {}}
-                  className={`flex-shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-xs font-medium transition-all duration-150 focus:outline-none select-none flex items-center gap-1.5 ${
+                  className={`flex-shrink-0 whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[11px] sm:text-xs font-medium transition-all duration-150 focus:outline-none select-none flex items-center gap-1.5 ${
                     isSelected
                       ? 'text-white shadow-xs'
                       : 'bg-white hover:bg-rose-50 text-stone-600 border border-rose-200/80 hover:text-[#DC7898]'
@@ -177,7 +177,7 @@ export const ProductGrid: React.FC = () => {
         ) : loading && products.length === 0 ? (
           <div className="text-center py-20 text-stone-400 text-xs">Carregando peças da coleção…</div>
         ) : sortedProducts.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-7 animate-fade-in">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-7 animate-fade-in">
             {sortedProducts.map((prod) => (
               <ProductCard key={prod.id} product={prod} />
             ))}

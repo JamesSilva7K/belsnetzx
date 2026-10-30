@@ -28,7 +28,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       onClick={() => setSelectedProductDetail(product)}
     >
       {/* 1. Image Container with generous rounded corners like reference */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[26px] bg-[#F7EAEB]/80 shadow-xs group-hover:shadow-lg transition-all duration-500">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[18px] sm:rounded-[26px] bg-[#F7EAEB]/80 shadow-xs group-hover:shadow-lg transition-all duration-500">
         <img
           src={product.images[0]}
           alt={product.name}
@@ -37,10 +37,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         />
 
         {/* Badges Container (Top Left) */}
-        <div className="absolute top-3.5 left-3.5 flex flex-col items-start gap-2 z-10 pointer-events-none">
+        <div className="absolute top-2 left-2 sm:top-3.5 sm:left-3.5 flex flex-col items-start gap-1.5 z-10 pointer-events-none">
           {/* Circular % OFF Badge */}
           {discountPercent && (
-            <div className="w-11 h-11 rounded-full bg-white text-[#DC7898] shadow-sm flex flex-col items-center justify-center font-bold text-[10px] leading-tight border border-rose-100">
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-white text-[#DC7898] shadow-sm flex flex-col items-center justify-center font-bold text-[8.5px] sm:text-[10px] leading-tight border border-rose-100">
               <span className="leading-none">{discountPercent}%</span>
               <span className="text-[9px] leading-none uppercase">OFF</span>
             </div>
@@ -48,7 +48,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
           {/* Capsule NOVO Badge */}
           {product.isNewArrival && (
-            <div className="px-2.5 py-1 rounded-full bg-[#E07A9A] text-white text-[10px] font-bold tracking-wider uppercase shadow-xs flex items-center gap-1">
+            <div className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-[#E07A9A] text-white text-[8.5px] sm:text-[10px] font-bold tracking-wider uppercase shadow-xs flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-white fill-white" />
               <span>NOVO</span>
             </div>
@@ -60,7 +60,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <div className="pt-3 pb-1 flex flex-col items-center text-center">
         
         {/* Title */}
-        <h3 className="font-sans text-xs sm:text-sm font-medium text-stone-800 line-clamp-1 group-hover:text-[#DC7898] transition-colors">
+        <h3 className="font-sans text-[11.5px] sm:text-sm font-medium text-stone-800 line-clamp-1 group-hover:text-[#DC7898] transition-colors px-1">
           {product.name}
         </h3>
 
@@ -86,13 +86,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
 
         {/* Pricing Line: R$ 239,90  R$ 189,90 */}
-        <div className="flex items-baseline justify-center gap-2">
+        <div className="flex items-baseline justify-center gap-1.5 sm:gap-2">
           {product.compareAtPrice && (
             <span className="text-xs text-stone-400 line-through">
               {formatCurrency(product.compareAtPrice)}
             </span>
           )}
-          <span className="text-sm sm:text-base font-bold text-[#DC7898]">
+          <span className="text-xs sm:text-base font-bold text-[#DC7898]">
             {formatCurrency(product.price)}
           </span>
         </div>

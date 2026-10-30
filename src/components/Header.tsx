@@ -92,101 +92,122 @@ export const Header: React.FC = () => {
       </div>
 
       {/* 2. MAIN HEADER (Signature Flor de Seda Rose #DC7898) */}
-      <div className="bg-[#DC7898] text-white px-4 sm:px-8 py-3.5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 sm:gap-8">
-          
-          {/* Mobile Menu Button */}
-          <div className="flex items-center lg:hidden">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-1 text-white hover:text-rose-100 transition-colors"
-              aria-label="Menu"
-            >
-              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+      <div className="bg-[#DC7898] text-white px-3 sm:px-8 py-2.5 sm:py-3.5">
+        <div className="max-w-7xl mx-auto">
+          {/* Top Row: Menu + Logo + Desktop Search + Actions */}
+          <div className="flex items-center justify-between gap-2 sm:gap-6">
+            
+            {/* Mobile Menu Button */}
+            <div className="flex items-center lg:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-1.5 -ml-1 text-white hover:text-rose-100 transition-colors"
+                aria-label="Menu"
+              >
+                {isMobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
+              </button>
+            </div>
+
+            {/* Logo (Flor de Seda / moda feminina) */}
+            <div className="flex-shrink-0 text-left">
+              <button 
+                onClick={() => { setSelectedCategory('Todos'); setSearchQuery(''); }}
+                className="group text-left focus:outline-none"
+              >
+                <span className="font-serif text-xl sm:text-3xl font-medium tracking-tight text-white block leading-none">
+                  Flor de Seda
+                </span>
+                <span className="font-script text-[11px] sm:text-sm text-rose-100/90 block -mt-0.5 tracking-wider italic font-light">
+                  moda feminina
+                </span>
+              </button>
+            </div>
+
+            {/* Center Search Pill (Desktop only) */}
+            <div className="hidden md:block flex-1 max-w-xl mx-4 lg:mx-6">
+              <form onSubmit={handleSearchSubmit} className="relative w-full">
+                <input
+                  type="text"
+                  placeholder="O que você está buscando no atelier?"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white text-stone-800 text-xs sm:text-sm placeholder:text-stone-400 pl-5 pr-10 py-2.5 rounded-full shadow-inner focus:outline-none focus:ring-2 focus:ring-rose-300 transition-all"
+                />
+                <button 
+                  type="submit" 
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#DC7898]"
+                  aria-label="Buscar"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+
+            {/* Right Action Icons with Responsive Labels */}
+            <div className="flex items-center gap-2.5 sm:gap-6">
+              
+              {/* Atendimento */}
+              <button
+                onClick={() => setIsSupportOpen(true)}
+                className="flex flex-col items-center group text-white hover:text-rose-100 transition-colors focus:outline-none p-1 sm:p-0"
+                title="Atendimento e Suporte"
+              >
+                <HeartHandshake className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span className="text-[10px] font-light mt-0.5 tracking-tight hidden sm:block">Atendimento</span>
+              </button>
+
+              {/* Entrar / Conta */}
+              <button
+                onClick={() => setIsAuthOpen(true)}
+                className="flex flex-col items-center group text-white hover:text-rose-100 transition-colors focus:outline-none p-1 sm:p-0"
+                title={customerUser ? `Olá, ${customerUser.name}` : 'Login ou Cadastro'}
+              >
+                <div className="relative">
+                  <User className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  {customerUser && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 ring-1 ring-white"></span>
+                  )}
+                </div>
+                <span className="text-[10px] font-light mt-0.5 tracking-tight hidden sm:block">
+                  {customerUser ? 'Minha Conta' : 'Entrar'}
+                </span>
+              </button>
+
+              {/* Carrinho */}
+              <button
+                onClick={() => setIsCartOpen(true)}
+                className="flex flex-col items-center group text-white hover:text-rose-100 transition-colors relative focus:outline-none p-1 sm:p-0"
+                title="Sacola de Compras"
+              >
+                <div className="relative">
+                  <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span className="absolute -top-1.5 -right-2.5 bg-white text-[#DC7898] font-bold text-[9px] w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
+                    {cartTotals.itemsCount}
+                  </span>
+                </div>
+                <span className="text-[10px] font-light mt-0.5 tracking-tight hidden sm:block">Carrinho</span>
+              </button>
+            </div>
           </div>
 
-          {/* Logo (Flor de Seda / moda feminina) */}
-          <div className="flex-shrink-0 text-center lg:text-left">
-            <button 
-              onClick={() => { setSelectedCategory('Todos'); setSearchQuery(''); }}
-              className="group text-left focus:outline-none"
-            >
-              <span className="font-serif text-2xl sm:text-3xl font-medium tracking-tight text-white block leading-none">
-                Flor de Seda
-              </span>
-              <span className="font-script text-xs sm:text-sm text-rose-100/90 block -mt-0.5 tracking-wider italic font-light">
-                moda feminina
-              </span>
-            </button>
-          </div>
-
-          {/* Center Search Pill */}
-          <div className="flex-1 max-w-xl mx-2 sm:mx-6">
+          {/* Dedicated Search Row for Mobile */}
+          <div className="md:hidden mt-2 pt-0.5">
             <form onSubmit={handleSearchSubmit} className="relative w-full">
               <input
                 type="text"
-                placeholder="O que você está buscando?"
+                placeholder="O que você procura hoje?"
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                }}
-                className="w-full bg-white text-stone-800 text-xs sm:text-sm placeholder:text-stone-400 pl-5 pr-10 py-2.5 sm:py-3 rounded-full shadow-inner focus:outline-none focus:ring-2 focus:ring-rose-300 transition-all"
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white text-stone-800 text-xs placeholder:text-stone-400 pl-4 pr-9 py-2 rounded-full shadow-inner focus:outline-none focus:ring-2 focus:ring-rose-300"
               />
               <button 
                 type="submit" 
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#DC7898]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#DC7898]"
                 aria-label="Buscar"
               >
-                <Search className="w-4 h-4" />
+                <Search className="w-3.5 h-3.5" />
               </button>
             </form>
-          </div>
-
-          {/* Right Action Icons with Vertical Labels */}
-          <div className="flex items-center gap-4 sm:gap-7">
-            
-            {/* Atendimento */}
-            <button
-              onClick={() => setIsSupportOpen(true)}
-              className="flex flex-col items-center group text-white hover:text-rose-100 transition-colors focus:outline-none"
-              title="Atendimento e Suporte"
-            >
-              <HeartHandshake className="w-5 h-5 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] sm:text-[11px] font-light mt-0.5 tracking-tight">Atendimento</span>
-            </button>
-
-            {/* Entrar / Conta */}
-            <button
-              onClick={() => setIsAuthOpen(true)}
-              className="flex flex-col items-center group text-white hover:text-rose-100 transition-colors focus:outline-none"
-              title={customerUser ? `Olá, ${customerUser.name}` : 'Login ou Cadastro'}
-            >
-              <div className="relative">
-                <User className="w-5 h-5 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
-                {customerUser && (
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 ring-1 ring-white"></span>
-                )}
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-light mt-0.5 tracking-tight">
-                {customerUser ? 'Minha Conta' : 'Entrar'}
-              </span>
-            </button>
-
-            {/* Carrinho */}
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="flex flex-col items-center group text-white hover:text-rose-100 transition-colors relative focus:outline-none"
-              title="Sacola de Compras"
-            >
-              <div className="relative">
-                <ShoppingBag className="w-5 h-5 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
-                <span className="absolute -top-1.5 -right-2.5 bg-white text-[#DC7898] font-bold text-[9px] w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
-                  {cartTotals.itemsCount}
-                </span>
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-light mt-0.5 tracking-tight">Carrinho</span>
-            </button>
           </div>
         </div>
       </div>

@@ -48,8 +48,8 @@ export const CategoryHighlights: React.FC = () => {
   };
 
   return (
-    <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10">
+    <section className="py-8 sm:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-10">
         <div>
           <span className="text-xs uppercase font-semibold text-rose-500 tracking-[0.2em]">Curadoria Exclusiva</span>
           <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-stone-900 font-medium mt-1">
@@ -61,14 +61,14 @@ export const CategoryHighlights: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {CATEGORY_CARDS.map((cat) => {
           const count = products.filter(p => p.category === cat.name).length;
           return (
             <button
               key={cat.name}
               onClick={() => handleSelect(cat.name)}
-              className="group relative h-96 rounded-3xl overflow-hidden text-left focus:outline-none shadow-sm hover:shadow-xl transition-all duration-500"
+              className="group relative h-56 sm:h-80 lg:h-96 rounded-2xl sm:rounded-3xl overflow-hidden text-left focus:outline-none shadow-sm hover:shadow-xl transition-all duration-500"
             >
               {/* Background Image */}
               <img
@@ -81,17 +81,17 @@ export const CategoryHighlights: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-rose-950/30 to-transparent" />
 
               {/* Bottom Content */}
-              <div className="absolute inset-0 p-6 flex flex-col justify-end text-white">
-                <span className="text-[11px] font-semibold uppercase tracking-widest text-rose-200 mb-1">
+              <div className="absolute inset-0 p-3 sm:p-6 flex flex-col justify-end text-white">
+                <span className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-widest text-rose-200 mb-0.5 sm:mb-1">
                   {count} {count === 1 ? 'modelo' : 'modelos'}
                 </span>
-                <h3 className="font-serif text-xl sm:text-2xl font-medium leading-snug text-white mb-1.5 flex items-center justify-between">
+                <h3 className="font-serif text-xs sm:text-xl lg:text-2xl font-medium leading-snug text-white mb-1 sm:mb-1.5 flex items-center justify-between">
                   <span>{cat.label}</span>
-                  <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-colors">
-                    <ArrowUpRight className="w-4 h-4" />
+                  <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-colors shrink-0 ml-1">
+                    <ArrowUpRight className="w-2.5 h-2.5 sm:w-4 sm:h-4" />
                   </div>
                 </h3>
-                <p className="text-xs text-rose-100/80 line-clamp-2 font-light">
+                <p className="text-[11px] sm:text-xs text-rose-100/80 line-clamp-2 font-light hidden sm:block">
                   {cat.description}
                 </p>
               </div>

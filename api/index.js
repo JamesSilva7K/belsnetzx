@@ -44,6 +44,10 @@ app.use('/api', (req, res, next) => {
   next();
 });
 app.use('/api', publicRouter);
+app.use((req, res, next) => {
+  if (req.url.startsWith(ADMIN_PREFIX)) return next();
+  publicRouter(req, res, next);
+});
 
 // API administrativa (/janaadmin1978/api)
 app.use(ADMIN_PREFIX + '/api', (req, res, next) => {

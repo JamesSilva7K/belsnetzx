@@ -6,11 +6,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const catalogPath = path.join(import.meta.dirname, '..', 'seed', 'catalog.json');
+import { INITIAL_CATALOG } from './catalog.js';
 
 function loadCatalog() {
-  const raw = fs.readFileSync(catalogPath, 'utf8');
-  return JSON.parse(raw);
+  return INITIAL_CATALOG;
 }
 
 export const DEFAULT_CUSTOMIZATION = {
