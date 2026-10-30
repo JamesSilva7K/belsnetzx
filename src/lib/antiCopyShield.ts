@@ -1,5 +1,5 @@
 /**
- * 🛡️ Blindagem de Interface e Proteção de Design
+ * Blindagem de Interface e Proteção de Design
  * -------------------------------------------------
  * • Impede cópia não autorizada do design e imagens
  * • Bloqueia atalhos de inspeção e visualização de código-fonte no storefront

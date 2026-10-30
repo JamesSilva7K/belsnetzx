@@ -1,147 +1,19 @@
-/**
- * ⚙️ Aura Rosa — Configuração central do servidor
- * -------------------------------------------------
- * Toda a configuração vem de variáveis de ambiente (.env.local / .env) ou de
- * chaves criptográficas geradas e persistidas localmente na primeira execução.
- * Nada aqui é "simulado": portas, caminho do painel e segredos são reais.
- */
+/** * Aura Rosa — Configuração central do servidor * ------------------------------------------------- * Toda a configuração vem de variáveis de ambiente (.env.local / .env) ou de * chaves criptográficas geradas e persistidas localmente na primeira execução. * Nada aqui é "simulado": portas, caminho do painel e segredos são reais. */
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import dotenv from 'dotenv';
-
-dotenv.config({ path: ['.env.local', '.env'], quiet: true });
-
-export const ROOT_DIR = path.resolve(import.meta.dirname, '..');
+import dotenv from 'dotenv'; dotenv.config({ path: ['.env.local', '.env'], quiet: true }); export const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 const defaultDataDir = process.env.VERCEL ? '/tmp/aura-data' : 'server/data';
 export const DATA_DIR = path.resolve(ROOT_DIR, process.env.DATA_DIR || defaultDataDir);
-try {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-} catch {}
-
-// No ambiente serverless (Vercel), garante persistência no /tmp copiando os dados base
-if (process.env.VERCEL) {
-  try {
-    const repoDb = path.join(ROOT_DIR, 'server/data/db.json');
-    const targetDb = path.join(DATA_DIR, 'db.json');
-    if (fs.existsSync(repoDb) && !fs.existsSync(targetDb)) {
-      fs.copyFileSync(repoDb, targetDb);
-    }
-  } catch {}
+try { fs.mkdirSync(DATA_DIR, { recursive: true });
+} catch {} // No ambiente serverless (Vercel), garante persistência no /tmp copiando os dados base
+if (process.env.VERCEL) { try { const repoDb = path.join(ROOT_DIR, 'server/data/db.json'); const targetDb = path.join(DATA_DIR, 'db.json'); if (fs.existsSync(repoDb) && !fs.existsSync(targetDb)) { fs.copyFileSync(repoDb, targetDb); } } catch {}
+} const KEYS_FILE = path.join(DATA_DIR, 'keys.json'); function int(value, fallback) { const parsed = Number.parseInt(String(value ?? ''), 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+} function readOrCreateKeys() { try { if (fs.existsSync(KEYS_FILE)) { const parsed = JSON.parse(fs.readFileSync(KEYS_FILE, 'utf8')); if (parsed && parsed.masterKey && parsed.pathSecret) return parsed; } } catch (error) { console.error('[config] Falha ao ler keys.json, recriando:', error.message); } const created = { masterKey: crypto.randomBytes(32).toString('base64url'), pathSecret: crypto.randomBytes(32).toString('base64url'), createdAt: new Date().toISOString(), note: 'Chaves mestras locais. NUNCA versione este arquivo. Faça backup dele: sem ele os segredos salvos não podem ser lidos.' }; fs.writeFileSync(KEYS_FILE, JSON.stringify(created, null, 2), { mode: 0o600 }); console.log(`[config] Novas chaves mestras geradas em ${KEYS_FILE}`); return created;
+} const keys = readOrCreateKeys(); if (process.env.MASTER_KEY) { keys.masterKey = process.env.MASTER_KEY;
 }
-
-const KEYS_FILE = path.join(DATA_DIR, 'keys.json');
-
-function int(value, fallback) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function readOrCreateKeys() {
-  try {
-    if (fs.existsSync(KEYS_FILE)) {
-      const parsed = JSON.parse(fs.readFileSync(KEYS_FILE, 'utf8'));
-      if (parsed && parsed.masterKey && parsed.pathSecret) return parsed;
-    }
-  } catch (error) {
-    console.error('[config] Falha ao ler keys.json, recriando:', error.message);
-  }
-  const created = {
-    masterKey: crypto.randomBytes(32).toString('base64url'),
-    pathSecret: crypto.randomBytes(32).toString('base64url'),
-    createdAt: new Date().toISOString(),
-    note: 'Chaves mestras locais. NUNCA versione este arquivo. Faça backup dele: sem ele os segredos salvos não podem ser lidos.'
-  };
-  fs.writeFileSync(KEYS_FILE, JSON.stringify(created, null, 2), { mode: 0o600 });
-  console.log(`[config] Novas chaves mestras geradas em ${KEYS_FILE}`);
-  return created;
-}
-
-const keys = readOrCreateKeys();
-
-if (process.env.MASTER_KEY) {
-  keys.masterKey = process.env.MASTER_KEY;
-}
-if (process.env.ADMIN_PATH_SECRET) {
-  keys.pathSecret = process.env.ADMIN_PATH_SECRET;
-}
-
-const storePort = int(process.env.STORE_PORT || process.env.PORT, 3000);
-const adminPortRaw = process.env.ADMIN_PORT === '0' ? 0 : int(process.env.ADMIN_PORT, storePort + 100);
-
-const isProdFlag = process.argv.includes('--prod');
-
-export const config = {
-  env: process.env.NODE_ENV || (isProdFlag ? 'production' : 'development'),
-  isProduction: process.env.NODE_ENV === 'production' || isProdFlag,
-
-  host: process.env.HOST || '0.0.0.0',
-  storePort,
-  adminPort: adminPortRaw === storePort ? 0 : adminPortRaw,
-
-  publicUrl: (
-    process.env.PUBLIC_URL ||
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null) ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-    `http://localhost:${storePort}`
-  ).replace(/\/$/, ''),
-  adminPublicUrl: (
-    process.env.ADMIN_PUBLIC_URL ||
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null) ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-    `http://localhost:${adminPortRaw === storePort ? storePort : adminPortRaw}`
-  ).replace(/\/$/, ''),
-
-  dataDir: DATA_DIR,
-  rootDir: ROOT_DIR,
-  distDir: path.resolve(ROOT_DIR, 'dist'),
-  keysFile: KEYS_FILE,
-
-  masterKey: keys.masterKey,
-  pathSecret: keys.pathSecret,
-  adminPath: (process.env.ADMIN_PATH || 'janaadmin1978').trim().replace(/^\/+|\/+$/g, ''),
-
-  // SyncPay Gateway
-  syncpay: {
-    clientId: (process.env.SYNCPAY_CLIENT_ID || '2dffd631-f327-4fd8-aa6c-cf0bbe28a97e').trim(),
-    clientSecret: (process.env.SYNCPAY_CLIENT_SECRET || 'cde163b7-0107-45b8-8721-68f817c2ceba').trim(),
-    baseUrl: (process.env.SYNCPAY_BASE_URL || 'https://api.syncpayments.com.br/api/partner/v1').replace(/\/+$/, '')
-  },
-
-  // Sessões administrativas
-  adminSessionHours: int(process.env.ADMIN_SESSION_HOURS, 8),
-  adminMaxAttempts: int(process.env.ADMIN_MAX_ATTEMPTS, 5),
-  adminLockMinutes: int(process.env.ADMIN_LOCK_MINUTES, 15),
-  bootstrapUser: (process.env.ADMIN_USER || 'JanaLopez').trim(),
-  bootstrapPassword: (process.env.ADMIN_PASSWORD || '1978JanaLopez').trim(),
-
-  // Cliente
-  customerSessionDays: int(process.env.CUSTOMER_SESSION_DAYS, 30),
-
-  // Regras de negócio reais da loja
-  freeShippingThreshold: Number(process.env.FREE_SHIPPING_THRESHOLD || 299),
-  shippingTable: {
-    PAC: Number(process.env.SHIPPING_PAC || 19.9),
-    SEDEX: Number(process.env.SHIPPING_SEDEX || 34.9),
-    Atelier: 0
-  },
-  lowStockThreshold: int(process.env.LOW_STOCK_THRESHOLD, 3),
-  cartAbandonMinutes: int(process.env.CART_ABANDON_MINUTES, 30),
-
-  // Telegram
-  telegram: {
-    token: (process.env.TELEGRAM_BOT_TOKEN || '').trim(),
-    chatId: (process.env.TELEGRAM_CHAT_ID || '').trim(),
-    adminIds: (process.env.TELEGRAM_ADMIN_IDS || '')
-      .split(',')
-      .map((id) => id.trim())
-      .filter(Boolean),
-    webhookSecret: (process.env.TELEGRAM_WEBHOOK_SECRET || '').trim(),
-    webhookUrl: (process.env.TELEGRAM_WEBHOOK_URL || '').trim(),
-    polling: (process.env.TELEGRAM_POLLING || 'true') !== 'false'
-  }
-};
-
-export function isTelegramEnvConfigured() {
-  return Boolean(config.telegram.token && (config.telegram.chatId || config.telegram.adminIds.length));
+if (process.env.ADMIN_PATH_SECRET) { keys.pathSecret = process.env.ADMIN_PATH_SECRET;
+} const storePort = int(process.env.STORE_PORT || process.env.PORT, 3000);
+const adminPortRaw = process.env.ADMIN_PORT === '0' ? 0 : int(process.env.ADMIN_PORT, storePort + 100); const isProdFlag = process.argv.includes('--prod'); export const config = { env: process.env.NODE_ENV || (isProdFlag ? 'production' : 'development'), isProduction: process.env.NODE_ENV === 'production' || isProdFlag, host: process.env.HOST || '0.0.0.0', storePort, adminPort: adminPortRaw === storePort ? 0 : adminPortRaw, publicUrl: ( process.env.PUBLIC_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null) || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) || `http://localhost:${storePort}` ).replace(/\/$/, ''), adminPublicUrl: ( process.env.ADMIN_PUBLIC_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null) || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) || `http://localhost:${adminPortRaw === storePort ? storePort : adminPortRaw}` ).replace(/\/$/, ''), dataDir: DATA_DIR, rootDir: ROOT_DIR, distDir: path.resolve(ROOT_DIR, 'dist'), keysFile: KEYS_FILE, masterKey: keys.masterKey, pathSecret: keys.pathSecret, adminPath: (process.env.ADMIN_PATH || 'janaadmin1978').trim().replace(/^\/+|\/+$/g, ''), // SyncPay Gateway syncpay: { clientId: (process.env.SYNCPAY_CLIENT_ID || '2dffd631-f327-4fd8-aa6c-cf0bbe28a97e').trim(), clientSecret: (process.env.SYNCPAY_CLIENT_SECRET || 'cde163b7-0107-45b8-8721-68f817c2ceba').trim(), baseUrl: (process.env.SYNCPAY_BASE_URL || 'https://api.syncpayments.com.br/api/partner/v1').replace(/\/+$/, '') }, // Sessões administrativas adminSessionHours: int(process.env.ADMIN_SESSION_HOURS, 8), adminMaxAttempts: int(process.env.ADMIN_MAX_ATTEMPTS, 5), adminLockMinutes: int(process.env.ADMIN_LOCK_MINUTES, 15), bootstrapUser: (process.env.ADMIN_USER || 'JanaLopez').trim(), bootstrapPassword: (process.env.ADMIN_PASSWORD || '1978JanaLopez').trim(), // Cliente customerSessionDays: int(process.env.CUSTOMER_SESSION_DAYS, 30), // Regras de negócio reais da loja freeShippingThreshold: Number(process.env.FREE_SHIPPING_THRESHOLD || 299), shippingTable: { PAC: Number(process.env.SHIPPING_PAC || 19.9), SEDEX: Number(process.env.SHIPPING_SEDEX || 34.9), Atelier: 0 }, lowStockThreshold: int(process.env.LOW_STOCK_THRESHOLD, 3), cartAbandonMinutes: int(process.env.CART_ABANDON_MINUTES, 30), // Telegram telegram: { token: (process.env.TELEGRAM_BOT_TOKEN || '').trim(), chatId: (process.env.TELEGRAM_CHAT_ID || '').trim(), adminIds: (process.env.TELEGRAM_ADMIN_IDS || '') .split(',') .map((id) => id.trim()) .filter(Boolean), webhookSecret: (process.env.TELEGRAM_WEBHOOK_SECRET || '').trim(), webhookUrl: (process.env.TELEGRAM_WEBHOOK_URL || '').trim(), polling: (process.env.TELEGRAM_POLLING || 'true') !== 'false' }
+}; export function isTelegramEnvConfigured() { return Boolean(config.telegram.token && (config.telegram.chatId || config.telegram.adminIds.length));
 }

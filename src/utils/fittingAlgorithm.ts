@@ -1,7 +1,7 @@
 import type { Product, UserBodyProfile } from '../types';
 
 /**
- * 📐 Motor de caimento da Aura Rosa
+ * Motor de caimento da Aura Rosa
  * -------------------------------------------------
  * Regras determinísticas, sem "precisão" inventada:
  *  1. valida e normaliza as medidas;

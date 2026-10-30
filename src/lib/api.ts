@@ -1,5 +1,5 @@
 /**
- * 🌐 Cliente HTTP único da aplicação.
+ * Cliente HTTP único da aplicação.
  * Nenhum dado de negócio é inventado no navegador: tudo vem da API real.
  */
 import type { Product, Order, Coupon, Banner, LeadInfo } from '../types';

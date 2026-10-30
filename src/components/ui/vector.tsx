@@ -1,5 +1,5 @@
 /**
- * ✨ Conjunto de ícones vetoriais autorais da boutique.
+ * Conjunto de ícones vetoriais autorais da boutique.
  * Todos desenhados no mesmo grid (24×24 por padrão), com traço fino
  * (stroke 1.5), cantos arredondados e cor herdada de `currentColor`
  * — garantindo consistência visual com o restante da loja.

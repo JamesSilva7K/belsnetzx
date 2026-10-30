@@ -31,7 +31,7 @@ export const HeroBannerSlider: React.FC = () => {
       <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 w-full py-16">
         <div className="max-w-xl">
           
-          {/* Tag: ♥ NOVA ESTAÇÃO */}
+          {/* Tag: NOVA ESTAÇÃO */}
           <div className="inline-flex items-center gap-1.5 text-[#DC7898] text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase mb-4 animate-fade-in">
             <Heart className="w-3.5 h-3.5 fill-[#DC7898]" />
             <span>NOVA ESTAÇÃO</span>

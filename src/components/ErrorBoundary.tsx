@@ -5,7 +5,7 @@ interface State {
 }
 
 /**
- * 🛡️ Fronteira de erro da vitrine.
+ * Fronteira de erro da vitrine.
  * Se algum componente falhar, a loja continua utilizável em vez de
  * mostrar uma tela em branco.
  */

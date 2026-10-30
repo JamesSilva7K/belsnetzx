@@ -100,8 +100,8 @@ export const CartDrawer: React.FC = () => {
                 {remainingForFreeShipping > 0 ? (
                   <>Faltam <strong className="text-[#DC7898] font-bold">{formatCurrency(remainingForFreeShipping)}</strong> para <strong className="text-stone-900 font-bold">Frete Grátis</strong>!</>
                 ) : (
-                  <span className="text-emerald-700 font-bold flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Parabéns! Você ganhou Frete Grátis ♡
+                  <span className="text-emerald-700 font-bold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Parabéns! Você ganhou Frete Grátis
                   </span>
                 )}
               </span>

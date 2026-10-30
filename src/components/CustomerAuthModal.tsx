@@ -660,9 +660,10 @@ export const CustomerAuthModal: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setSearchItem('')}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xs"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 rounded-full"
+                          title="Limpar busca"
                         >
-                          ✕
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>

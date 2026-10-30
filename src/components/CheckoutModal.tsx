@@ -970,8 +970,9 @@ export const CheckoutModal: React.FC = () => {
                   <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-2">
                     <Check className="w-6 h-6 stroke-[3]" />
                   </div>
-                  <h4 className="text-base font-bold text-emerald-900">
-                    🎉 Pagamento Pix Confirmado com Sucesso!
+                  <h4 className="text-base font-bold text-emerald-900 flex items-center justify-center gap-2">
+                    <Sparkles className="w-5 h-5 text-emerald-600" />
+                    Pagamento Pix Confirmado com Sucesso!
                   </h4>
                   <p className="text-xs text-emerald-700">
                     O pagamento foi identificado e aprovado instantaneamente pelo sistema. Seu pedido já está sendo preparado com muito carinho pelo atelier Flor de Seda.

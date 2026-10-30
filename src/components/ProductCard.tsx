@@ -46,7 +46,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </div>
           )}
 
-          {/* Capsule ✨ NOVO Badge */}
+          {/* Capsule NOVO Badge */}
           {product.isNewArrival && (
             <div className="px-2.5 py-1 rounded-full bg-[#E07A9A] text-white text-[10px] font-bold tracking-wider uppercase shadow-xs flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-white fill-white" />

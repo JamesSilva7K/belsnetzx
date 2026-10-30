@@ -455,10 +455,11 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
                       >
                         {sz}
                         {isRecommended && (
-                          <span className={`absolute -top-1.5 -right-1 text-[8px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-tight shadow-2xs ${
+                          <span className={`absolute -top-1.5 -right-1 text-[8px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-tight shadow-2xs flex items-center gap-0.5 ${
                             selectedSize === sz ? 'bg-white text-[#DC7898]' : 'bg-[#DC7898] text-white'
                           }`}>
-                            ★ Ideal
+                            <Star className="w-2 h-2 fill-current" />
+                            Ideal
                           </span>
                         )}
                       </button>
@@ -474,8 +475,9 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
                       Apenas {currentStock} unidades restantes nesta variação!
                     </span>
                   ) : currentStock > 3 ? (
-                    <span className="text-emerald-700 font-medium">
-                      ✓ Disponível no Atelier para envio imediato ({currentStock} peças)
+                    <span className="text-emerald-700 font-medium flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      Disponível no Atelier para envio imediato ({currentStock} peças)
                     </span>
                   ) : (
                     <span className="text-rose-500 font-medium">
@@ -696,7 +698,10 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
                           Enviar Avaliação
                         </button>
                         {reviewSuccess && (
-                          <span className="text-emerald-700 text-xs ml-3 font-semibold">✓ Avaliação enviada com sucesso!</span>
+                          <span className="text-emerald-700 text-xs ml-3 font-semibold inline-flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" />
+                            Avaliação enviada com sucesso!
+                          </span>
                         )}
                       </form>
                     )}
@@ -712,8 +717,9 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
                             {[...Array(5)].map((_, i) => (
                               <Star key={i} className={`w-3 h-3 ${i < rev.rating ? 'fill-amber-400 text-amber-400' : 'text-stone-200'}`} />
                             ))}
-                            <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full ml-2 font-medium">
-                              ✓ Compradora Verificada
+                            <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full ml-2 font-medium inline-flex items-center gap-1">
+                              <Check className="w-2.5 h-2.5" />
+                              Compradora Verificada
                             </span>
                           </div>
                           <p className="text-stone-600 text-xs leading-relaxed">{rev.comment}</p>
