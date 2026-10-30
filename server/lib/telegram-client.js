@@ -1,4 +1,114 @@
-/** * Cliente HTTP mínimo da API oficial do Telegram * ------------------------------------------------- * Sem SDK: usa fetch nativo do Node com timeout, retry exponencial e * tratamento dos erros documentados (429 com retry_after, 4xx permanentes). */ export class TelegramError extends Error { constructor(message, { status = 0, description = '', retryAfter = 0 } = {}) { super(message); this.name = 'TelegramError'; this.status = status; this.description = description; this.retryAfter = retryAfter; }
-} export function createTelegramClient(token) { if (!token) throw new TelegramError('Token do bot não configurado'); const base = `https://api.telegram.org/bot${token}`; async function call(method, payload = {}, { timeout = 20000, retries = 2 } = {}) { let attempt = 0; let lastError; while (attempt <= retries) { try { const response = await fetch(`${base}/${method}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(timeout) }); const body = await response.json().catch(() => ({})); if (response.ok && body.ok) return body.result; const retryAfter = Number(body?.parameters?.retry_after || 0); const description = body?.description || `HTTP ${response.status}`; if (response.status === 429 && attempt < retries) { await sleep((retryAfter || 1) * 1000); attempt += 1; continue; } if (response.status >= 500 && attempt < retries) { await sleep(500 * 2 ** attempt); attempt += 1; continue; } throw new TelegramError(`Telegram ${method}: ${description}`, { status: response.status, description, retryAfter }); } catch (error) { lastError = error; if (error.name === 'TelegramError') throw error; if (attempt < retries) { await sleep(500 * 2 ** attempt); attempt += 1; continue; } throw new TelegramError(`Falha de rede em ${method}: ${error.message}`); } } throw lastError; } return { call, getMe: () => call('getMe', {}, { retries: 1 }), sendMessage: (chatId, text, options = {}) => call('sendMessage', { chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true, ...options }), editMessageText: (chatId, messageId, text, options = {}) => call('editMessageText', { chat_id: chatId, message_id: messageId, text, parse_mode: 'HTML', disable_web_page_preview: true, ...options }), answerCallbackQuery: (callbackQueryId, options = {}) => call('answerCallbackQuery', { callback_query_id: callbackQueryId, ...options }, { retries: 0 }), deleteMessage: (chatId, messageId) => call('deleteMessage', { chat_id: chatId, message_id: messageId }), setMyCommands: (commands) => call('setMyCommands', { commands }), getUpdates: (offset, timeoutSeconds = 50) => call('getUpdates', { offset, timeout: timeoutSeconds, allowed_updates: ['message', 'callback_query'] }, { timeout: (timeoutSeconds + 15) * 1000, retries: 3 }), setWebhook: (url, secretToken) => call('setWebhook', { url, secret_token: secretToken || undefined, allowed_updates: ['message', 'callback_query'], drop_pending_updates: false }), deleteWebhook: () => call('deleteWebhook', { drop_pending_updates: false }) };
-} export function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ *  Cliente HTTP mínimo da API oficial do Telegram
+ * -------------------------------------------------
+ * Sem SDK: usa fetch nativo do Node com timeout, retry exponencial e
+ * tratamento dos erros documentados (429 com retry_after, 4xx permanentes).
+ */
+
+export class TelegramError extends Error {
+  constructor(message, { status = 0, description = '', retryAfter = 0 } = {}) {
+    super(message);
+    this.name = 'TelegramError';
+    this.status = status;
+    this.description = description;
+    this.retryAfter = retryAfter;
+  }
+}
+
+export function createTelegramClient(token) {
+  if (!token) throw new TelegramError('Token do bot não configurado');
+
+  const base = `https://api.telegram.org/bot${token}`;
+
+  async function call(method, payload = {}, { timeout = 20000, retries = 2 } = {}) {
+    let attempt = 0;
+    let lastError;
+
+    while (attempt <= retries) {
+      try {
+        const response = await fetch(`${base}/${method}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(timeout)
+        });
+
+        const body = await response.json().catch(() => ({}));
+
+        if (response.ok && body.ok) return body.result;
+
+        const retryAfter = Number(body?.parameters?.retry_after || 0);
+        const description = body?.description || `HTTP ${response.status}`;
+
+        if (response.status === 429 && attempt < retries) {
+          await sleep((retryAfter || 1) * 1000);
+          attempt += 1;
+          continue;
+        }
+        if (response.status >= 500 && attempt < retries) {
+          await sleep(500 * 2 ** attempt);
+          attempt += 1;
+          continue;
+        }
+        throw new TelegramError(`Telegram ${method}: ${description}`, {
+          status: response.status,
+          description,
+          retryAfter
+        });
+      } catch (error) {
+        lastError = error;
+        if (error.name === 'TelegramError') throw error;
+        if (attempt < retries) {
+          await sleep(500 * 2 ** attempt);
+          attempt += 1;
+          continue;
+        }
+        throw new TelegramError(`Falha de rede em ${method}: ${error.message}`);
+      }
+    }
+    throw lastError;
+  }
+
+  return {
+    call,
+    getMe: () => call('getMe', {}, { retries: 1 }),
+    sendMessage: (chatId, text, options = {}) =>
+      call('sendMessage', {
+        chat_id: chatId,
+        text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+        ...options
+      }),
+    editMessageText: (chatId, messageId, text, options = {}) =>
+      call('editMessageText', {
+        chat_id: chatId,
+        message_id: messageId,
+        text,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+        ...options
+      }),
+    answerCallbackQuery: (callbackQueryId, options = {}) =>
+      call('answerCallbackQuery', { callback_query_id: callbackQueryId, ...options }, { retries: 0 }),
+    deleteMessage: (chatId, messageId) => call('deleteMessage', { chat_id: chatId, message_id: messageId }),
+    setMyCommands: (commands) => call('setMyCommands', { commands }),
+    getUpdates: (offset, timeoutSeconds = 50) =>
+      call('getUpdates', { offset, timeout: timeoutSeconds, allowed_updates: ['message', 'callback_query'] }, {
+        timeout: (timeoutSeconds + 15) * 1000,
+        retries: 3
+      }),
+    setWebhook: (url, secretToken) =>
+      call('setWebhook', {
+        url,
+        secret_token: secretToken || undefined,
+        allowed_updates: ['message', 'callback_query'],
+        drop_pending_updates: false
+      }),
+    deleteWebhook: () => call('deleteWebhook', { drop_pending_updates: false })
+  };
+}
+
+export function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
