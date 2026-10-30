@@ -12,6 +12,7 @@ import http from 'node:http';
 import { config } from './config.js';
 import { commit, db } from './lib/db.js';
 import { adminPathInfo, ensureBootstrapAdmin } from './services/admin-auth.js';
+import { ensureCustomersSynced } from './services/orders.js';
 import { registerSink } from './services/notify.js';
 import { deliverNotification, refreshProfile, registerCommands, startPolling, stopPolling, status as telegramStatus } from './services/telegram-service.js';
 import { scanAbandonedCarts } from './services/carts.js';
@@ -214,6 +215,7 @@ function startScheduler() {
 
 async function main() {
   const bootstrap = ensureBootstrapAdmin();
+ensureCustomersSynced();
 
   registerSink('telegram', deliverNotification);
 

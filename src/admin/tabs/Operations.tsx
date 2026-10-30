@@ -963,7 +963,7 @@ function CustomerProfileModal({
                             title="Copiar ID do pedido"
                           >
                             {copiedId === ord.id ? (
-                              <Check className="h-3 w-3 text-emerald-400" />
+                              <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                             ) : (
                               <Copy className="h-3 w-3" />
                             )}
@@ -1004,7 +1004,7 @@ function CustomerProfileModal({
                           {ord.orderStatus.replace(/_/g, ' ')}
                         </Badge>
 
-                        <span className="font-semibold text-sm text-emerald-400 tabular-nums ml-2">
+                        <span className="font-semibold text-sm text-emerald-600 dark:text-emerald-400 tabular-nums ml-2">
                           {formatBRL(ord.total)}
                         </span>
                       </div>
@@ -1013,7 +1013,7 @@ function CustomerProfileModal({
                     {/* Rastreio dos Correios (se houver) */}
                     {ord.trackingCode && (
                       <div className="px-3.5 py-1.5 bg-sky-500/10 border-b border-sky-500/20 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5 text-sky-400">
+                        <div className="flex items-center gap-1.5 text-sky-600 dark:text-sky-400">
                           <Truck className="h-3.5 w-3.5" />
                           <span>Rastreio:</span>
                           <strong className="font-mono-admin text-[var(--admin-text-main)]">{ord.trackingCode}</strong>
@@ -1022,7 +1022,7 @@ function CustomerProfileModal({
                           <button
                             type="button"
                             onClick={() => handleCopy(ord.trackingCode)}
-                            className="text-[11px] text-sky-400 hover:text-sky-300 font-medium cursor-pointer"
+                            className="text-[11px] text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 font-medium cursor-pointer"
                           >
                             {copiedId === ord.trackingCode ? 'Copiado!' : 'Copiar'}
                           </button>
@@ -1030,7 +1030,7 @@ function CustomerProfileModal({
                             href={`https://rastreamento.correios.com.br/app/index.php?codigo=${ord.trackingCode}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-0.5"
+                            className="text-[11px] text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 font-semibold flex items-center gap-0.5"
                           >
                             <span>Abrir</span>
                             <ExternalLink className="h-2.5 w-2.5" />
@@ -1076,7 +1076,7 @@ function CustomerProfileModal({
                       <button
                         type="button"
                         onClick={() => setExpandedOrderId(isExpanded ? null : ord.id)}
-                        className="text-[11px] text-rose-400 hover:text-rose-300 font-medium flex items-center gap-1 cursor-pointer"
+                        className="text-[11px] text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-medium flex items-center gap-1 cursor-pointer"
                       >
                         <span>{isExpanded ? 'Ocultar detalhes' : 'Ver detalhamento financeiro & entrega'}</span>
                         {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -1108,7 +1108,7 @@ function CustomerProfileModal({
                             <span className="text-[var(--admin-text-main)]">{formatBRL(ord.subtotal)}</span>
                           </div>
                           {ord.discount > 0 && (
-                            <div className="flex justify-between text-emerald-400">
+                            <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                               <span>Desconto:</span>
                               <span>-{formatBRL(ord.discount)}</span>
                             </div>
@@ -1119,7 +1119,7 @@ function CustomerProfileModal({
                           </div>
                           <div className="flex justify-between font-semibold text-[var(--admin-text-main)] pt-1 border-t border-[var(--admin-border)]">
                             <span>Total Final:</span>
-                            <span className="text-emerald-400">{formatBRL(ord.total)}</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatBRL(ord.total)}</span>
                           </div>
                         </div>
                       </div>

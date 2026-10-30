@@ -283,9 +283,41 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     loadStore();
     loadSession();
+  }, [loadStore, loadSession]);
+
+  /* --------------- Sincronização inteligente em tempo real (SSE + Fallback) --------------- */
+  useEffect(() => {
+    let source: EventSource | null = null;
+    let fallbackTimer: any = null;
+
+    try {
+      source = new EventSource('/api/events');
+      source.addEventListener('change', () => {
+        loadStore();
+        if (customerToken.get()) loadSession();
+      });
+      source.onerror = () => {
+        if (!fallbackTimer) {
+          fallbackTimer = setInterval(() => {
+            loadStore();
+            if (customerToken.get()) loadSession();
+          }, 12000);
+        }
+      };
+    } catch {
+      fallbackTimer = setInterval(() => {
+        loadStore();
+        if (customerToken.get()) loadSession();
+      }, 12000);
+    }
+
+    return () => {
+      if (source) source.close();
+      if (fallbackTimer) clearInterval(fallbackTimer);
+    };
   }, [loadStore, loadSession]);
 
   /* ------------------------- Persistência local ------------------------- */

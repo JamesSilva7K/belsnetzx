@@ -11,8 +11,10 @@ import adminRouter from '../server/routes/admin.js';
 import { firewallShield } from '../server/services/security.js';
 import { errorHandler, originGuard } from '../server/lib/http.js';
 import { adminPathInfo, ensureBootstrapAdmin } from '../server/services/admin-auth.js';
+import { ensureCustomersSynced } from '../server/services/orders.js';
 
 ensureBootstrapAdmin();
+ensureCustomersSynced();
 
 const app = express();
 app.disable('x-powered-by');

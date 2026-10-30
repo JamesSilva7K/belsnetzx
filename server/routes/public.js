@@ -1,7 +1,7 @@
 /**  API pública — tudo o que a loja consome em tempo real. */
 import express from 'express';
 import { config } from '../config.js';
-import { commit, db } from '../lib/db.js';
+import { commit, db, bus } from '../lib/db.js';
 import { asyncHandler, clientIp, rateLimit } from '../lib/http.js';
 import { HttpError } from '../lib/errors.js';
 import { normalizeEmail } from '../lib/format.js';
@@ -21,6 +21,34 @@ function customerFromRequest(req) {
   const token = header.toLowerCase().startsWith('bearer ') ? header.slice(7).trim() : '';
   return { token, customer: resolveCustomerToken(token) };
 }
+
+
+/* --------------------------- Tempo real público (SSE) --------------------------- */
+router.get('/events', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+  res.write(`event: ready\ndata: ${JSON.stringify({ at: new Date().toISOString() })}\n\n`);
+
+  const forward = (event) => {
+    if (!event) return;
+    res.write(`event: change\ndata: ${JSON.stringify({ at: new Date().toISOString(), event: event.event })}\n\n`);
+  };
+
+  bus.on('change', forward);
+
+  const heartbeat = setInterval(() => {
+    res.write(`event: ping\ndata: ${Date.now()}\n\n`);
+  }, 25000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    bus.off('change', forward);
+  });
+});
 
 router.get('/health', (req, res) => {
   res.json({

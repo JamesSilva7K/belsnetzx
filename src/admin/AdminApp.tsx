@@ -109,6 +109,7 @@ function AdminShell({ session, onLogout }: { session: { username: string; expire
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
     try {
       localStorage.setItem('aura_admin_theme', theme);
     } catch {}

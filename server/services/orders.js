@@ -124,6 +124,81 @@ function validateLead(lead) {
  };
 }
 
+
+export function syncCustomerWithOrder(data, order) {
+  if (!order || !order.lead || !order.lead.email) return;
+  const email = normalizeEmail(order.lead.email);
+  const cpfDigits = onlyDigits(order.lead.cpf || '');
+
+  let customer = data.customers.find(
+    (c) => normalizeEmail(c.email) === email || (cpfDigits && c.cpf && onlyDigits(c.cpf) === cpfDigits)
+  );
+
+  const leadAddress = {
+    street: order.lead.street || '',
+    number: order.lead.number || '',
+    complement: order.lead.complement || '',
+    neighborhood: order.lead.neighborhood || '',
+    city: order.lead.city || '',
+    state: order.lead.state || '',
+    cep: order.lead.cep || ''
+  };
+
+  if (!customer) {
+    customer = {
+      id: nextId('cli'),
+      fullName: order.lead.fullName,
+      email: email,
+      cpf: order.lead.cpf,
+      phone: order.lead.phone,
+      createdAt: order.createdAt || nowIso(),
+      lastLoginAt: null,
+      addresses: leadAddress.street ? [leadAddress] : [],
+      ordersCount: 0,
+      totalSpent: 0,
+      marketingOptIn: false
+    };
+    data.customers.unshift(customer);
+    data.counters.accountsCreated = (data.counters.accountsCreated || 0) + 1;
+  } else {
+    if (!customer.addresses) customer.addresses = [];
+    const hasAddr = customer.addresses.some(
+      (a) => a.cep === leadAddress.cep && a.number === leadAddress.number
+    );
+    if (!hasAddr && leadAddress.street) {
+      customer.addresses.unshift(leadAddress);
+    }
+    if (!customer.phone && order.lead.phone) customer.phone = order.lead.phone;
+    if (!customer.cpf && order.lead.cpf) customer.cpf = order.lead.cpf;
+  }
+
+  // Vincular ID do cliente no pedido
+  order.customerId = customer.id;
+
+  // Recalcular métricas validadas e 100% reais de todos os pedidos deste cliente
+  const clientOrders = data.orders.filter(
+    (o) => normalizeEmail(o.lead?.email || '') === email || 
+           (cpfDigits && o.lead?.cpf && onlyDigits(o.lead.cpf) === cpfDigits) || 
+           o.customerId === customer.id
+  );
+
+  customer.ordersCount = clientOrders.length;
+  customer.totalSpent = clientOrders
+    .filter((o) => ['confirmado', 'pago'].includes(o.paymentStatus) || ['pago', 'em_separacao', 'enviado', 'entregue'].includes(o.orderStatus))
+    .reduce((sum, o) => sum + Number(o.total || 0), 0);
+  customer.lastOrderAt = order.createdAt || nowIso();
+}
+
+export function ensureCustomersSynced() {
+  const data = db();
+  if (!Array.isArray(data.orders) || data.orders.length === 0) return;
+  commit((store) => {
+    for (const ord of store.orders) {
+      syncCustomerWithOrder(store, ord);
+    }
+  });
+}
+
 export async function createOrder(input, context = {}) {
  const lead = validateLead(input.lead);
  const items = resolveItems(input.items);
