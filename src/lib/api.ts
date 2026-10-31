@@ -231,8 +231,11 @@ export const adminApi = {
     adminRequest<{ order: Order }>(`/orders/${id}/pay`, { method: 'POST', body: JSON.stringify({ note }) }),
   setOrderStatus: (id: string, status: string, note = '') =>
     adminRequest<{ order: Order }>(`/orders/${id}/status`, { method: 'POST', body: JSON.stringify({ status, note }) }),
-  setTracking: (id: string, trackingCode: string) =>
-    adminRequest<{ order: Order }>(`/orders/${id}/tracking`, { method: 'POST', body: JSON.stringify({ trackingCode }) }),
+  setTracking: (id: string, trackingCode: string, note = '') =>
+    adminRequest<{ order: Order; whatsappUrl?: string; whatsappMsg?: string }>(`/orders/${id}/tracking`, {
+      method: 'POST',
+      body: JSON.stringify({ trackingCode, note })
+    }),
   deleteOrder: (id: string) => adminRequest<{ ok: boolean }>(`/orders/${id}`, { method: 'DELETE' }),
 
   products: () => adminRequest<{ products: Product[] }>('/products'),

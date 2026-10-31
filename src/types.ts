@@ -115,6 +115,9 @@ export interface Order {
   paymentStatus: OrderPaymentStatus;
   orderStatus: OrderFulfillmentStatus;
   trackingCode?: string;
+  trackingCarrier?: string;
+  trackingUrl?: string;
+  trackingDispatchedAt?: string;
   paymentDetails?: {
     pixCopyPaste?: string;
     pixQrCodeUrl?: string;

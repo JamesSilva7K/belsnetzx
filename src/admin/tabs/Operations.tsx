@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   BadgeDollarSign,
   RefreshCw,
+  Send,
   Ban,
   CheckCircle2,
   Clock,
@@ -221,6 +222,7 @@ export function OrdersTab({ liveKey }: { liveKey: number }) {
   const [tracking, setTracking] = useState('');
   const [newStatus, setNewStatus] = useState<string>('');
   const [statusNote, setStatusNote] = useState<string>('');
+  const [dispatchNotify, setDispatchNotify] = useState<{ url: string; msg: string; orderId: string } | null>(null);
   const { data, loading, error, reload } = useLoad(() => adminApi.orders({ status, search: query }), [status, query, liveKey]);
   const { busy, run } = useAction();
   const toast = useToast();
@@ -498,12 +500,34 @@ export function OrdersTab({ liveKey }: { liveKey: number }) {
                   </Field>
                 </div>
                 <div>
-                  <Field label="Código de Rastreio (Correios)">
-                    <Input
-                      value={tracking}
-                      onChange={(e) => setTracking(e.target.value)}
-                      placeholder="Ex: BR123456789SP"
-                    />
+                  <Field label="Código de Rastreio Oficial">
+                    <div className="space-y-1">
+                      <Input
+                        value={tracking}
+                        onChange={(e) => setTracking(e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                        placeholder="Ex: AA123456789BR"
+                        className="font-mono-admin uppercase"
+                      />
+                      {tracking ? (
+                        <div className="flex items-center gap-1.5 text-[10px]">
+                          {/^[A-Z]{2}[0-9]{9}[A-Z]{2}$/.test(tracking) ? (
+                            <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                              <ShieldCheck className="h-3 w-3" /> Correios SRO Oficial (13 dígitos)
+                            </span>
+                          ) : tracking.length >= 6 ? (
+                            <span className="text-sky-400 font-semibold flex items-center gap-1">
+                              <Truck className="h-3 w-3" /> Código de Envio Validado
+                            </span>
+                          ) : (
+                            <span className="text-amber-400">
+                              Mínimo 6 caracteres
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-stone-500">Padrão Correios SRO (ex: AA123456789BR) ou Transportadora</p>
+                      )}
+                    </div>
                   </Field>
                 </div>
                 <div>
@@ -543,33 +567,94 @@ export function OrdersTab({ liveKey }: { liveKey: number }) {
                   )}
                 </div>
 
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={<RefreshCw className="h-3.5 w-3.5" />}
-                  loading={busy}
-                  onClick={async () => {
-                    await run(async () => {
-                      let updated = selected;
-                      if (tracking && tracking !== selected.trackingCode) {
-                        const res = await adminApi.setTracking(selected.id, tracking);
-                        updated = res.order;
-                      }
-                      if (newStatus && newStatus !== selected.orderStatus) {
-                        const res = await adminApi.setOrderStatus(selected.id, newStatus, statusNote);
-                        updated = res.order;
-                      }
-                      setSelected(updated);
-                      await reload();
-                      toast.push(`Pedido ${selected.id} atualizado e sincronizado em tempo real.`, 'success');
-                      setStatusNote('');
-                    });
-                  }}
-                >
-                  Salvar e Sincronizar em Tempo Real
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {tracking && tracking.length >= 6 && (
+                    <Button
+                      variant="subtle"
+                      size="sm"
+                      icon={<Send className="h-3.5 w-3.5 text-sky-400" />}
+                      loading={busy}
+                      onClick={async () => {
+                        await run(async () => {
+                          const res = await adminApi.setTracking(selected.id, tracking, statusNote);
+                          setSelected(res.order);
+                          await reload();
+                          toast.push(`Rastreio oficial anexado ao pedido ${selected.id} e status atualizado para Enviado.`, 'success');
+                          if (res.whatsappUrl) {
+                            setDispatchNotify({ url: res.whatsappUrl, msg: res.whatsappMsg || '', orderId: selected.id });
+                          }
+                        });
+                      }}
+                    >
+                      Anexar Rastreio & Notificar
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={<RefreshCw className="h-3.5 w-3.5" />}
+                    loading={busy}
+                    onClick={async () => {
+                      await run(async () => {
+                        let updated = selected;
+                        if (tracking && tracking !== selected.trackingCode) {
+                          const res = await adminApi.setTracking(selected.id, tracking, statusNote);
+                          updated = res.order;
+                          if (res.whatsappUrl) {
+                            setDispatchNotify({ url: res.whatsappUrl, msg: res.whatsappMsg || '', orderId: selected.id });
+                          }
+                        }
+                        if (newStatus && newStatus !== selected.orderStatus) {
+                          const res = await adminApi.setOrderStatus(selected.id, newStatus, statusNote);
+                          updated = res.order;
+                        }
+                        setSelected(updated);
+                        await reload();
+                        toast.push(`Pedido ${selected.id} atualizado e sincronizado em tempo real.`, 'success');
+                        setStatusNote('');
+                      });
+                    }}
+                  >
+                    Salvar e Sincronizar
+                  </Button>
+                </div>
               </div>
             </div>
+
+            {dispatchNotify && (
+              <div className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+                <div className="flex items-start gap-2.5">
+                  <Truck className="h-5 w-5 text-sky-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold text-sky-300">
+                      Rastreio Oficial Anexado ao Pedido {dispatchNotify.orderId}
+                    </p>
+                    <p className="text-[11px] text-stone-300 mt-0.5">
+                      O status do produto já foi atualizado para "Enviado / A caminho" na visão da cliente.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href={dispatchNotify.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs"
+                  >
+                    <span>Enviar no WhatsApp</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setDispatchNotify(null)}
+                    className="px-2 py-1.5 rounded-lg border border-[#26262e] text-stone-400 hover:text-stone-200 text-xs"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="rounded-xl border border-[#26262e] p-3">
               <p className="mb-2 text-[11px] uppercase tracking-wider text-stone-500">Histórico</p>

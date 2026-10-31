@@ -180,8 +180,16 @@ router.post('/orders/:id/status', (req, res) => {
 });
 
 router.post('/orders/:id/tracking', (req, res) => {
-  const order = setTrackingCode(req.params.id, req.body?.trackingCode, { actor: `admin:${req.adminSession.username}` });
-  res.json({ ok: true, order });
+  const order = setTrackingCode(req.params.id, req.body?.trackingCode, {
+    actor: `admin:${req.adminSession.username}`,
+    note: req.body?.note || ''
+  });
+  const phoneDigits = (order.lead?.phone || '').replace(/\D/g, '');
+  const trackingUrl = order.trackingUrl || `https://rastreamento.correios.com.br/app/index.php?codigo=${order.trackingCode}`;
+  const whatsappMsg = `Olá, ${order.lead?.fullName}! ✨\n\nSeu pedido *${order.id}* na Flor de Seda foi enviado com sucesso!\n\n📦 Código de Rastreio Oficial: ${order.trackingCode}\n🚚 Transportador: ${order.trackingCarrier || 'Correios'}\n\nAcompanhe a entrega pelo link:\n${trackingUrl}\n\nQualquer dúvida estamos à disposição!`;
+  const whatsappUrl = phoneDigits.length >= 10 ? `https://wa.me/55${phoneDigits}?text=${encodeURIComponent(whatsappMsg)}` : null;
+
+  res.json({ ok: true, order, whatsappUrl, whatsappMsg });
 });
 
 router.delete('/orders/:id', (req, res) => {

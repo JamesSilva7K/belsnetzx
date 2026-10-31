@@ -612,34 +612,75 @@ export function changeStatus(orderId, status, { actor = 'painel', note = '' } = 
   return updated;
 }
 
-export function setTrackingCode(orderId, trackingCode, { actor = 'painel' } = {}) {
- const code = String(trackingCode || '').trim();
- if (code.length < 6) throw new HttpError(400, 'Código de rastreio inválido.', 'invalid_tracking');
+export function validateAndFormatTrackingCode(rawCode) {
+  const code = String(rawCode || '').trim().toUpperCase().replace(/\s+/g, '');
+  if (!code || code.length < 6) {
+    throw new HttpError(400, 'Código de rastreio inválido. Deve ter pelo menos 6 caracteres.', 'invalid_tracking');
+  }
 
- const existing = getOrder(orderId);
- if (!existing) throw new HttpError(404, 'Pedido não encontrado.', 'order_not_found');
+  // Padrão oficial Correios (SRO): 2 letras + 9 dígitos + 2 letras (ex: AA123456789BR)
+  const isCorreios = /^[A-Z]{2}[0-9]{9}[A-Z]{2}$/.test(code);
+  const isGeneric = /^[A-Z0-9\-_]{6,32}$/.test(code);
 
- const updated = commit((data) => {
- const order = data.orders[findOrderIndex(data, orderId)];
- order.trackingCode = code;
- order.updatedAt = nowIso();
- if (['pago', 'em_separacao'].includes(order.orderStatus)) {
- order.orderStatus = 'enviado';
- pushHistory(order, 'enviado', `Rastreio ${code} registrado por ${actor}.`);
- } else {
- pushHistory(order, order.orderStatus, `Rastreio ${code} registrado por ${actor}.`);
- }
- return order;
- }, { event: 'order.tracking', payload: { id: orderId } });
+  if (!isCorreios && !isGeneric) {
+    throw new HttpError(
+      400,
+      'Código de rastreio inválido. Utilize o formato oficial Correios (ex: AA123456789BR) ou identificador oficial da transportadora.',
+      'invalid_tracking'
+    );
+  }
 
- notify({
- type: 'order_status',
- title: ` ${updated.id} enviado`,
- detail: `Rastreio ${code} • ${updated.lead.fullName}`,
- meta: { orderId: updated.id, status: updated.orderStatus, trackingCode: code, customer: updated.lead.fullName, total: updated.total }
- });
+  return {
+    code,
+    carrier: isCorreios ? 'Correios' : 'Transportadora',
+    url: isCorreios
+      ? `https://rastreamento.correios.com.br/app/index.php?codigo=${code}`
+      : `https://www.google.com/search?q=${code}+rastreamento`,
+    isOfficialCorreios: isCorreios
+  };
+}
 
- return updated;
+export function setTrackingCode(orderId, trackingCode, { actor = 'painel', note = '' } = {}) {
+  const verified = validateAndFormatTrackingCode(trackingCode);
+  const existing = getOrder(orderId);
+  if (!existing) throw new HttpError(404, 'Pedido não encontrado.', 'order_not_found');
+
+  const updated = commit((data) => {
+    const order = data.orders[findOrderIndex(data, orderId)];
+    order.trackingCode = verified.code;
+    order.trackingCarrier = verified.carrier;
+    order.trackingUrl = verified.url;
+    order.trackingDispatchedAt = nowIso();
+
+    // Atualiza status do pedido e de todos os produtos para enviado / a caminho
+    order.orderStatus = 'enviado';
+    order.updatedAt = nowIso();
+
+    pushHistory(
+      order,
+      'enviado',
+      note || `Rastreio oficial ${verified.code} (${verified.carrier}) anexado e liberado para o cliente por ${actor}.`
+    );
+    syncCustomerWithOrder(data, order);
+    return order;
+  }, { event: 'order.tracking', payload: { id: orderId, trackingCode: verified.code, trackingUrl: verified.url } });
+
+  notify({
+    type: 'order_status',
+    title: `Pedido ${updated.id} enviado`,
+    detail: `Rastreio ${verified.code} (${verified.carrier}) • ${updated.lead.fullName}`,
+    meta: {
+      orderId: updated.id,
+      status: updated.orderStatus,
+      trackingCode: verified.code,
+      carrier: verified.carrier,
+      trackingUrl: verified.url,
+      customer: updated.lead.fullName,
+      total: updated.total
+    }
+  });
+
+  return updated;
 }
 
 export function customerOrders(email) {
