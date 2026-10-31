@@ -10,7 +10,7 @@ import { createOrder, getPublicOrder, quoteShipping, customerOrders, markPaid } 
 import { publicSettings, listBanners } from '../services/settings.js';
 import { evaluateCoupon } from '../services/coupons.js';
 import { syncCart } from '../services/carts.js';
-import { registerCustomer, loginCustomer, resolveCustomerToken, logoutCustomer, customerProfile } from '../services/customers.js';
+import { registerCustomer, loginCustomer, resolveCustomerToken, logoutCustomer, customerProfile, updateCustomerProfile } from '../services/customers.js';
 import { handleUpdate } from '../services/telegram-bot.js';
 import { processSyncPayWebhook, checkSyncPayTransaction } from '../services/syncpay.js';
 
@@ -229,6 +229,20 @@ router.get('/auth/me', asyncHandler((req, res) => {
   const { customer } = customerFromRequest(req);
   if (!customer) throw new HttpError(401, 'Sessão expirada.', 'unauthorized');
   res.json({ ok: true, customer: customerProfile(customer.id) });
+}));
+
+router.put('/auth/me', asyncHandler((req, res) => {
+  const { customer } = customerFromRequest(req);
+  if (!customer) throw new HttpError(401, 'Sessão expirada. Faça login novamente.', 'unauthorized');
+  const updated = updateCustomerProfile(customer.id, req.body || {});
+  res.json({ ok: true, customer: updated });
+}));
+
+router.patch('/auth/me', asyncHandler((req, res) => {
+  const { customer } = customerFromRequest(req);
+  if (!customer) throw new HttpError(401, 'Sessão expirada. Faça login novamente.', 'unauthorized');
+  const updated = updateCustomerProfile(customer.id, req.body || {});
+  res.json({ ok: true, customer: updated });
 }));
 
 router.get('/me/orders', asyncHandler((req, res) => {

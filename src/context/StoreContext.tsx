@@ -106,6 +106,23 @@ interface StoreContextType {
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   register: (data: { name: string; email: string; cpf: string; phone: string; password: string }) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
+  updateCustomerProfile: (data: {
+    fullName?: string;
+    phone?: string;
+    cpf?: string;
+    address?: {
+      cep: string;
+      street: string;
+      number: string;
+      complement?: string;
+      neighborhood: string;
+      city: string;
+      state: string;
+    };
+    currentPassword?: string;
+    newPassword?: string;
+  }) => Promise<{ ok: boolean; error?: string }>;
+  setCustomerUser: React.Dispatch<React.SetStateAction<CustomerSession | null>>;
 
   selectedCategory: string;
   setSelectedCategory: (value: string) => void;
@@ -652,6 +669,20 @@ useEffect(() => {
     []
   );
 
+  
+  const updateCustomerProfile = useCallback(async (data: any) => {
+    try {
+      const res = await shopApi.updateProfile(data);
+      if (res.ok) {
+        setCustomerUser(res.customer);
+        return { ok: true };
+      }
+      return { ok: false, error: 'Falha ao atualizar cadastro.' };
+    } catch (err: any) {
+      return { ok: false, error: err?.message || 'Falha ao atualizar cadastro.' };
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     await shopApi.logout().catch(() => undefined);
     customerToken.set('');
@@ -700,6 +731,8 @@ useEffect(() => {
     login,
     register,
     logout,
+    updateCustomerProfile,
+    setCustomerUser,
 
     selectedCategory,
     setSelectedCategory,

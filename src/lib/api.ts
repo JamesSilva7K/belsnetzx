@@ -127,6 +127,25 @@ export const shopApi = {
     }),
   logout: () => request<{ ok: boolean }>(`${PUBLIC_BASE}/auth/logout`, { method: 'POST' }),
   me: () => request<{ customer: any }>(`${PUBLIC_BASE}/auth/me`),
+  updateProfile: (body: {
+    fullName?: string;
+    phone?: string;
+    cpf?: string;
+    address?: {
+      cep: string;
+      street: string;
+      number: string;
+      complement?: string;
+      neighborhood: string;
+      city: string;
+      state: string;
+    };
+    currentPassword?: string;
+    newPassword?: string;
+  }) => request<{ ok: boolean; customer: CustomerSession }>(`${PUBLIC_BASE}/auth/me`, {
+    method: 'PUT',
+    body: JSON.stringify(body)
+  }),
   myOrders: () => request<{ orders: Order[] }>(`${PUBLIC_BASE}/me/orders`),
   newsletter: (email: string) =>
     request<{ ok: boolean }>(`${PUBLIC_BASE}/newsletter`, { method: 'POST', body: JSON.stringify({ email }) }),

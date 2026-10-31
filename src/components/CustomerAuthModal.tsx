@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ModalShell } from './ui/ModalShell';
-import { formatCPF, validateCPF, formatPhone, validateEmail, formatCurrency } from '../utils/validators';
+import { formatCPF, validateCPF, formatPhone, formatCEP, fetchAddressByCep, validateEmail, formatCurrency } from '../utils/validators';
 import { 
   X, 
   User, 
@@ -45,6 +45,7 @@ export const CustomerAuthModal: React.FC = () => {
     login,
     register,
     logout,
+    updateCustomerProfile,
     orders,
     wishlist,
     products,
@@ -75,8 +76,105 @@ export const CustomerAuthModal: React.FC = () => {
   const [regError, setRegError] = useState<string | null>(null);
   const [regLoading, setRegLoading] = useState(false);
 
-  // Customer Profile Tabs & Filters
+// Customer Profile Tabs & Filters
   const [profileTab, setProfileTab] = useState<'purchases' | 'favorites' | 'account'>('purchases');
+
+  // Edit Profile States
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editCpf, setEditCpf] = useState('');
+  const [editCep, setEditCep] = useState('');
+  const [editStreet, setEditStreet] = useState('');
+  const [editNumber, setEditNumber] = useState('');
+  const [editComplement, setEditComplement] = useState('');
+  const [editNeighborhood, setEditNeighborhood] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editState, setEditState] = useState('');
+  const [editCurrentPass, setEditCurrentPass] = useState('');
+  const [editNewPass, setEditNewPass] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
+  const [editSuccessMsg, setEditSuccessMsg] = useState<string | null>(null);
+  const [editErrorMsg, setEditErrorMsg] = useState<string | null>(null);
+
+  // Sync profile edit form with customerUser data
+  useEffect(() => {
+    if (customerUser) {
+      setEditName(customerUser.name || customerUser.fullName || '');
+      setEditPhone(customerUser.phone || '');
+      setEditCpf(customerUser.cpf || '');
+      const primaryAddr = customerUser.addresses?.[0];
+      if (primaryAddr) {
+        setEditCep(primaryAddr.cep || '');
+        setEditStreet(primaryAddr.street || '');
+        setEditNumber(primaryAddr.number || '');
+        setEditComplement(primaryAddr.complement || '');
+        setEditNeighborhood(primaryAddr.neighborhood || '');
+        setEditCity(primaryAddr.city || '');
+        setEditState(primaryAddr.state || '');
+      }
+    }
+  }, [customerUser]);
+
+  const handleCepLookup = async (cepVal: string) => {
+    const formatted = formatCEP(cepVal);
+    setEditCep(formatted);
+    const clean = formatted.replace(/\D/g, '');
+    if (clean.length === 8) {
+      const addr = await fetchAddressByCep(clean);
+      if (addr) {
+        setEditStreet(addr.street);
+        setEditNeighborhood(addr.neighborhood);
+        setEditCity(addr.city);
+        setEditState(addr.state);
+      }
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditErrorMsg(null);
+    setEditSuccessMsg(null);
+
+    try {
+      const payload: any = {
+        fullName: editName.trim(),
+        phone: editPhone.trim(),
+        cpf: editCpf.trim()
+      };
+
+      if (editStreet.trim() && editCep.trim()) {
+        payload.address = {
+          cep: editCep.trim(),
+          street: editStreet.trim(),
+          number: editNumber.trim(),
+          complement: editComplement.trim(),
+          neighborhood: editNeighborhood.trim(),
+          city: editCity.trim(),
+          state: editState.trim().toUpperCase()
+        };
+      }
+
+      if (editNewPass.trim()) {
+        payload.currentPassword = editCurrentPass;
+        payload.newPassword = editNewPass.trim();
+      }
+
+      const res = await updateCustomerProfile(payload);
+      if (res.ok) {
+        setEditCurrentPass('');
+        setEditNewPass('');
+        setEditSuccessMsg('Dados cadastrais atualizados com sucesso!');
+        setTimeout(() => setEditSuccessMsg(null), 4000);
+      } else {
+        setEditErrorMsg(res.error || 'Erro ao atualizar dados cadastrais.');
+      }
+    } catch (err: any) {
+      setEditErrorMsg(err?.message || 'Erro ao atualizar perfil.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
   const [searchItem, setSearchItem] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');

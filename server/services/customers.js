@@ -138,6 +138,81 @@ export function logoutCustomer(token) {
  return { ok: true };
 }
 
+
+export function updateCustomerProfile(customerId, input) {
+  const data = db();
+  const customer = data.customers.find((entry) => entry.id === customerId);
+  if (!customer) throw new HttpError(404, 'Cliente não encontrado.', 'customer_not_found');
+
+  const fullName = input.fullName ? String(input.fullName).trim() : customer.fullName;
+  const phone = input.phone ? String(input.phone).trim() : customer.phone;
+  const cpf = input.cpf ? String(input.cpf).trim() : customer.cpf;
+
+  if (input.fullName) {
+    assert(fullName.split(/\s+/).length >= 2, 400, 'Informe seu nome completo.', 'invalid_name');
+  }
+  if (input.phone) {
+    assert(onlyDigits(phone).length >= 10, 400, 'WhatsApp inválido (informe DDD + número).', 'invalid_phone');
+  }
+  if (input.cpf && onlyDigits(input.cpf) !== onlyDigits(customer.cpf)) {
+    assert(isValidCPF(cpf), 400, 'CPF inválido.', 'invalid_cpf');
+    const duplicate = data.customers.find((c) => c.id !== customerId && onlyDigits(c.cpf) === onlyDigits(cpf));
+    if (duplicate) throw new HttpError(409, 'Já existe outra conta com este CPF.', 'cpf_taken');
+  }
+
+  let newCredentials = null;
+  if (input.newPassword) {
+    assert(String(input.newPassword).length >= 8, 400, 'A nova senha deve ter pelo menos 8 caracteres.', 'weak_password');
+    if (customer.credentials) {
+      assert(input.currentPassword, 400, 'Informe a senha atual para alterá-la.', 'missing_password');
+      assert(verifyPassword(String(input.currentPassword), customer.credentials), 401, 'Senha atual incorreta.', 'invalid_password');
+    }
+    newCredentials = hashPassword(String(input.newPassword));
+  }
+
+  const updated = commit((store) => {
+    const record = store.customers.find((entry) => entry.id === customerId);
+    record.fullName = fullName;
+    record.phone = phone;
+    record.cpf = cpf;
+    if (newCredentials) {
+      record.credentials = newCredentials;
+    }
+
+    if (input.address && typeof input.address === 'object' && input.address.street) {
+      const addr = {
+        street: String(input.address.street).trim(),
+        number: String(input.address.number || '').trim(),
+        complement: String(input.address.complement || '').trim(),
+        neighborhood: String(input.address.neighborhood || '').trim(),
+        city: String(input.address.city || '').trim(),
+        state: String(input.address.state || '').trim().toUpperCase(),
+        cep: String(input.address.cep || '').trim()
+      };
+      if (!record.addresses) record.addresses = [];
+      const idx = record.addresses.findIndex((a) => a.cep === addr.cep && a.number === addr.number);
+      if (idx >= 0) {
+        record.addresses[idx] = addr;
+      } else {
+        record.addresses.unshift(addr);
+      }
+    }
+
+    record.updatedAt = nowIso();
+    return record;
+  }, { event: 'customer.updated', payload: { id: customerId, email: customer.email } });
+
+  notify({
+    type: 'customer_updated',
+    title: ' Cadastro de cliente atualizado',
+    detail: `${fullName} • ${customer.email} • ${phone}`,
+    severity: 'info',
+    meta: { customerId, fullName, email: customer.email, phone }
+  });
+
+  return publicCustomer(updated);
+}
+
 export function customerProfile(customerId) {
  const customer = db().customers.find((entry) => entry.id === customerId);
  if (!customer) return null;
