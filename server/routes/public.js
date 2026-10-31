@@ -34,8 +34,7 @@ router.get('/events', (req, res) => {
   res.write(`event: ready\ndata: ${JSON.stringify({ at: new Date().toISOString() })}\n\n`);
 
   const forward = (event) => {
-    if (!event) return;
-    res.write(`event: change\ndata: ${JSON.stringify({ at: new Date().toISOString(), event: event.event })}\n\n`);
+    res.write(`event: change\ndata: ${JSON.stringify({ at: new Date().toISOString(), event: event?.event || 'change' })}\n\n`);
   };
 
   bus.on('change', forward);

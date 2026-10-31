@@ -90,7 +90,7 @@ export function commit(mutator, { event = null, payload = null } = {}) {
   data.meta.updatedAt = new Date().toISOString();
   persist();
   // Sempre emite 'change' para o painel SSE; quando há evento explícito, envia dados extras
-  bus.emit('change', event ? { event, payload, at: data.meta.updatedAt } : undefined);
+  bus.emit('change', { event: event || 'change', payload, at: data.meta.updatedAt });
   return result;
 }
 

@@ -13,6 +13,7 @@ import {
   Sparkles, 
   Lock, 
   CheckCircle2,
+  Ban,
   ExternalLink,
   Mail,
   Eye,
@@ -47,6 +48,7 @@ export const CustomerAuthModal: React.FC = () => {
     logout,
     updateCustomerProfile,
     orders,
+    refreshOrders,
     wishlist,
     products,
     addToCart,
@@ -97,6 +99,15 @@ export const CustomerAuthModal: React.FC = () => {
   const [editErrorMsg, setEditErrorMsg] = useState<string | null>(null);
 
   // Sync profile edit form with customerUser data
+  useEffect(() => {
+    if (!isAuthOpen || activeTab !== 'compras') return;
+    refreshOrders();
+    const timer = setInterval(() => {
+      refreshOrders();
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [isAuthOpen, activeTab, refreshOrders]);
+
   useEffect(() => {
     if (customerUser) {
       setEditName(customerUser.name || customerUser.fullName || '');
@@ -943,6 +954,8 @@ export const CustomerAuthModal: React.FC = () => {
                                       ? 'bg-sky-100 text-sky-900 border border-sky-200'
                                       : ord.orderStatus === 'em_separacao'
                                       ? 'bg-rose-100 text-[#DC7898] border border-rose-200'
+                                      : ord.orderStatus === 'cancelado'
+                                      ? 'bg-stone-100 text-stone-700 border border-stone-300'
                                       : isPaid
                                       ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                                       : 'bg-amber-50 text-amber-800 border border-amber-200'
@@ -954,11 +967,58 @@ export const CustomerAuthModal: React.FC = () => {
                                     ? 'Enviado'
                                     : ord.orderStatus === 'entregue'
                                     ? 'Entregue'
+                                    : ord.orderStatus === 'cancelado'
+                                    ? 'Cancelado'
                                     : isPaid
                                     ? 'Aprovado'
                                     : 'Aguardando'}
                                 </span>
                               </div>
+                            </div>
+
+                            {/* Stepper Visual de Rastreamento do Pedido */}
+                            <div className="px-4 py-3 bg-[#FCF8FA] border-b border-rose-100">
+                              {ord.orderStatus === 'cancelado' ? (
+                                <div className="flex items-center gap-2 p-2 rounded-xl bg-stone-100 border border-stone-200 text-stone-600 text-xs">
+                                  <Ban className="w-4 h-4 text-stone-500 shrink-0" />
+                                  <span>Pedido cancelado. Qualquer dúvida ou estorno, fale diretamente conosco.</span>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="flex items-center justify-between text-[11px] font-medium text-stone-500 mb-2">
+                                    <span className="font-semibold text-stone-800">
+                                      {ord.orderStatus === 'entregue'
+                                        ? 'Pacote entregue no destino'
+                                        : ord.orderStatus === 'enviado'
+                                        ? 'A caminho do seu endereço'
+                                        : ord.orderStatus === 'em_separacao'
+                                        ? 'Em preparação no atelier Flor de Seda'
+                                        : isPaid
+                                        ? 'Pagamento aprovado · Aguardando separação'
+                                        : 'Aguardando confirmação de pagamento'}
+                                    </span>
+                                    <span className="text-[10px] text-stone-400">
+                                      Etapa {ord.orderStatus === 'entregue' ? '4 de 4' : ord.orderStatus === 'enviado' ? '3 de 4' : ord.orderStatus === 'em_separacao' ? '2 de 4' : '1 de 4'}
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-4 gap-1.5">
+                                    {[
+                                      { label: '1. Aprovado', active: isPaid || ['em_separacao', 'enviado', 'entregue'].includes(ord.orderStatus) },
+                                      { label: '2. Atelier', active: ['em_separacao', 'enviado', 'entregue'].includes(ord.orderStatus) },
+                                      { label: '3. A Caminho', active: ['enviado', 'entregue'].includes(ord.orderStatus) },
+                                      { label: '4. Entregue', active: ord.orderStatus === 'entregue' }
+                                    ].map((st, sIdx) => (
+                                      <div key={sIdx} className="space-y-1">
+                                        <div className={`h-1.5 rounded-full transition-all ${st.active ? 'bg-[#DC7898]' : 'bg-stone-200'}`} />
+                                        <span className={`block text-[10px] text-center font-medium ${st.active ? 'text-[#DC7898] font-bold' : 'text-stone-400'}`}>
+                                          {st.label}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
                             {/* Tracking Code Banner (if present) */}
@@ -1003,7 +1063,7 @@ export const CustomerAuthModal: React.FC = () => {
                             {/* Items List */}
                             <div className="p-4 space-y-2.5">
                               {(ord.items || []).map((item, idx) => (
-                                <div key={idx} className="flex items-center justify-between gap-3 text-xs">
+                                <div key={idx} className="flex items-center justify-between gap-3 text-xs border-b border-rose-50 pb-2 last:border-0 last:pb-0">
                                   <div className="flex items-center gap-3">
                                     {item.image ? (
                                       <img
@@ -1018,7 +1078,7 @@ export const CustomerAuthModal: React.FC = () => {
                                     )}
                                     <div>
                                       <p className="font-semibold text-stone-900 line-clamp-1">{item.name}</p>
-                                      <div className="flex items-center gap-1.5 text-[11px] text-stone-500 mt-0.5">
+                                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-stone-500 mt-0.5">
                                         {item.selectedSize && <span>Tam: <strong className="text-stone-700">{item.selectedSize}</strong></span>}
                                         {item.selectedColor && (
                                           <>
@@ -1029,11 +1089,40 @@ export const CustomerAuthModal: React.FC = () => {
                                         <span>•</span>
                                         <span>Qtd: <strong className="text-stone-700">{item.quantity}</strong></span>
                                       </div>
+                                      <div className="mt-1">
+                                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                                          ord.orderStatus === 'entregue'
+                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                            : ord.orderStatus === 'enviado'
+                                            ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                                            : ord.orderStatus === 'em_separacao'
+                                            ? 'bg-rose-50 text-[#DC7898] border border-rose-200'
+                                            : isPaid
+                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                            : 'bg-stone-50 text-stone-600 border border-stone-200'
+                                        }`}>
+                                          <Package className="w-3 h-3" />
+                                          {ord.orderStatus === 'entregue'
+                                            ? 'Item Entregue'
+                                            : ord.orderStatus === 'enviado'
+                                            ? 'Em Trânsito'
+                                            : ord.orderStatus === 'em_separacao'
+                                            ? 'No Atelier'
+                                            : isPaid
+                                            ? 'Pronto para Separação'
+                                            : 'Aguardando Pagamento'}
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
-                                  <span className="font-bold text-stone-800 shrink-0">
-                                    {formatCurrency(item.price * item.quantity)}
-                                  </span>
+                                  <div className="text-right shrink-0">
+                                    <span className="font-bold text-stone-800 block text-xs">
+                                      {formatCurrency(item.price * item.quantity)}
+                                    </span>
+                                    <span className="text-[10px] text-stone-400 block mt-0.5">
+                                      {formatCurrency(item.price)} cada
+                                    </span>
+                                  </div>
                                 </div>
                               ))}
                             </div>

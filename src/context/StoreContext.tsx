@@ -94,6 +94,7 @@ interface StoreContextType {
   isInWishlist: (productId: string) => boolean;
 
   orders: Order[];
+  refreshOrders: () => Promise<void>;
   createOrder: (input: {
     lead: LeadInfo;
     shippingMethod: 'PAC' | 'SEDEX' | 'Atelier';
@@ -284,6 +285,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       setLoading(false);
       setReady(true);
+    }
+  }, []);
+
+  const refreshOrders = useCallback(async () => {
+    if (!customerToken.get()) return;
+    try {
+      const mine = await shopApi.myOrders();
+      setOrders(mine.orders);
+    } catch {
+      /* ignore */
     }
   }, []);
 
@@ -725,6 +736,7 @@ useEffect(() => {
     isInWishlist,
 
     orders,
+    refreshOrders,
     createOrder,
 
     customerUser,

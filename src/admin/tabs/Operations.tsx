@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   BadgeDollarSign,
+  RefreshCw,
   Ban,
   CheckCircle2,
   Clock,
@@ -218,6 +219,8 @@ export function OrdersTab({ liveKey }: { liveKey: number }) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Order | null>(null);
   const [tracking, setTracking] = useState('');
+  const [newStatus, setNewStatus] = useState<string>('');
+  const [statusNote, setStatusNote] = useState<string>('');
   const { data, loading, error, reload } = useLoad(() => adminApi.orders({ status, search: query }), [status, query, liveKey]);
   const { busy, run } = useAction();
   const toast = useToast();
@@ -304,7 +307,7 @@ export function OrdersTab({ liveKey }: { liveKey: number }) {
                 <Td className="text-xs text-stone-500">{formatDate(order.createdAt)}</Td>
                 <Td>
                   <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => { setSelected(order); setTracking(order.trackingCode || ''); }}>
+                    <Button size="sm" variant="ghost" onClick={() => { setSelected(order); setTracking(order.trackingCode || ''); setNewStatus(order.orderStatus); setStatusNote(''); }}>
                       Abrir
                     </Button>
                     <button
@@ -384,65 +387,187 @@ export function OrdersTab({ liveKey }: { liveKey: number }) {
             </div>
 
             <div className="rounded-xl border border-[#26262e] p-3">
-              <p className="mb-2 text-[11px] uppercase tracking-wider text-stone-500">Itens ({selected.items.length})</p>
-              {selected.items.map((item) => (
-                <div key={item.cartItemId} className="flex items-center justify-between border-b border-[#1d1d23] py-1.5 last:border-0">
-                  <div className="text-xs text-stone-300">
-                    {item.quantity}× {item.name}
-                    <span className="text-stone-500"> · {item.selectedSize}/{item.selectedColor?.name}</span>
-                  </div>
-                  <span className="text-xs text-stone-300">{formatBRL(item.price * item.quantity)}</span>
-                </div>
-              ))}
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] uppercase tracking-wider text-stone-500">Itens do Pedido ({selected.items.length})</p>
+                <span className="text-[10px] text-stone-400 font-mono-admin">Status de Envio: {selected.orderStatus.replace(/_/g, ' ')}</span>
+              </div>
+              <div className="space-y-2">
+                {selected.items.map((item) => {
+                  const itemStatus = 
+                    selected.orderStatus === 'entregue' ? 'Entregue' :
+                    selected.orderStatus === 'enviado' ? 'Em trânsito' :
+                    selected.orderStatus === 'em_separacao' ? 'No atelier' :
+                    selected.orderStatus === 'pago' ? 'Pronto para separação' :
+                    selected.orderStatus === 'cancelado' ? 'Cancelado' : 'Aguardando pagamento';
+                  const itemTone = STATUS_TONE[selected.orderStatus] || 'neutral';
+
+                  return (
+                    <div key={item.cartItemId} className="flex items-center justify-between gap-3 border-b border-[#1d1d23] pb-2 last:border-0 last:pb-0">
+                      <div className="flex items-center gap-3">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="w-10 h-12 rounded-lg object-cover border border-[#26262e] shrink-0" />
+                        ) : (
+                          <div className="w-10 h-12 rounded-lg bg-[#16161a] border border-[#26262e] flex items-center justify-center text-stone-500 shrink-0">
+                            <Package className="h-4 w-4" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs font-medium text-stone-200 line-clamp-1">{item.name}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-stone-500 mt-0.5">
+                            <span>Qtd: <strong className="text-stone-300">{item.quantity}</strong></span>
+                            <span>·</span>
+                            <span>Tam: <strong className="text-stone-300">{item.selectedSize}</strong></span>
+                            {item.selectedColor && (
+                              <>
+                                <span>·</span>
+                                <span>Cor: <strong className="text-stone-300">{item.selectedColor.name}</strong></span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-xs font-semibold text-stone-200 block">{formatBRL(item.price * item.quantity)}</span>
+                        <Badge tone={itemTone} className="text-[9px] mt-0.5">{itemStatus}</Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Código de rastreio">
-                <div className="flex gap-2">
-                  <Input value={tracking} onChange={(event) => setTracking(event.target.value)} placeholder="BR123456789SP" />
-                  <Button
-                    variant="subtle"
-                    loading={busy}
-                    onClick={() => act(() => adminApi.setTracking(selected.id, tracking), 'Rastreio registrado.')}
-                  >
-                    Salvar
-                  </Button>
+            {/* Gerenciador Inteligente de Status & Sincronização em Tempo Real */}
+            <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs font-semibold text-rose-300 uppercase tracking-wider">
+                    Gerenciador Inteligente de Status & Rastreio
+                  </p>
+                  <p className="text-[11px] text-stone-400">
+                    Atualização em tempo real sincronizada diretamente na visão da cliente.
+                  </p>
                 </div>
-              </Field>
-              <div>
-                <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-stone-500">Ações</p>
+                <Badge tone={STATUS_TONE[selected.orderStatus] || 'neutral'}>
+                  Status Atual: {selected.orderStatus.replace(/_/g, ' ')}
+                </Badge>
+              </div>
+
+              {/* Botões Rápidos de Etapas do Pedido */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                {[
+                  { key: 'aguardando_pagamento', label: '1. Aguardando', icon: Clock },
+                  { key: 'pago', label: '2. Pago', icon: BadgeDollarSign },
+                  { key: 'em_separacao', label: '3. No Atelier', icon: Package },
+                  { key: 'enviado', label: '4. Enviado', icon: Truck },
+                  { key: 'entregue', label: '5. Entregue', icon: CheckCircle2 }
+                ].map((step) => {
+                  const Icon = step.icon;
+                  const isCurrent = selected.orderStatus === step.key;
+                  return (
+                    <button
+                      key={step.key}
+                      type="button"
+                      onClick={() => setNewStatus(step.key)}
+                      className={cn(
+                        'flex items-center gap-1.5 p-2 rounded-lg text-left text-xs font-medium transition-all border cursor-pointer',
+                        isCurrent
+                          ? 'border-rose-400 bg-rose-500/20 text-rose-200 shadow-xs'
+                          : newStatus === step.key
+                          ? 'border-stone-500 bg-white/10 text-stone-200'
+                          : 'border-[#26262e] bg-[#16161a] text-stone-400 hover:border-stone-600'
+                      )}
+                    >
+                      <Icon className={cn('h-3.5 w-3.5 shrink-0', isCurrent ? 'text-rose-300' : 'text-stone-500')} />
+                      <span className="truncate">{step.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3 pt-1">
+                <div>
+                  <Field label="Novo Status">
+                    <Select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
+                      <option value="aguardando_pagamento">Aguardando pagamento</option>
+                      <option value="pago">Pago / Confirmado</option>
+                      <option value="em_separacao">Em separação no atelier</option>
+                      <option value="enviado">Enviado / Em trânsito</option>
+                      <option value="entregue">Entregue</option>
+                      <option value="cancelado">Cancelado (estorno)</option>
+                    </Select>
+                  </Field>
+                </div>
+                <div>
+                  <Field label="Código de Rastreio (Correios)">
+                    <Input
+                      value={tracking}
+                      onChange={(e) => setTracking(e.target.value)}
+                      placeholder="Ex: BR123456789SP"
+                    />
+                  </Field>
+                </div>
+                <div>
+                  <Field label="Nota / Observação">
+                    <Input
+                      value={statusNote}
+                      onChange={(e) => setStatusNote(e.target.value)}
+                      placeholder="Ex: Embalado com carinho"
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#26262e]">
                 <div className="flex flex-wrap gap-2">
-                  {selected.paymentStatus === 'pendente' ? (
-                    <Button variant="success" size="sm" icon={<BadgeDollarSign className="h-3.5 w-3.5" />} loading={busy}
-                      onClick={() => act(() => adminApi.payOrder(selected.id), 'Pagamento confirmado e lançado no financeiro.')}>
-                      Confirmar pagamento
+                  {selected.paymentStatus === 'pendente' && (
+                    <Button
+                      variant="success"
+                      size="sm"
+                      icon={<BadgeDollarSign className="h-3.5 w-3.5" />}
+                      loading={busy}
+                      onClick={() => act(() => adminApi.payOrder(selected.id), 'Pagamento confirmado e registrado no financeiro.')}
+                    >
+                      Confirmar Pagamento Imediato
                     </Button>
-                  ) : null}
-                  {['aguardando_pagamento', 'pago'].includes(selected.orderStatus) ? (
-                    <Button variant="subtle" size="sm" icon={<Package className="h-3.5 w-3.5" />} loading={busy}
-                      onClick={() => act(() => adminApi.setOrderStatus(selected.id, 'em_separacao'), 'Pedido em separação.')}>
-                      Separação
+                  )}
+                  {selected.orderStatus !== 'cancelado' && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      icon={<Ban className="h-3.5 w-3.5" />}
+                      loading={busy}
+                      onClick={() => act(() => adminApi.setOrderStatus(selected.id, 'cancelado', 'Cancelado pela administração'), 'Pedido cancelado e estoque retornado.')}
+                    >
+                      Cancelar Pedido
                     </Button>
-                  ) : null}
-                  {selected.orderStatus === 'em_separacao' ? (
-                    <Button variant="subtle" size="sm" icon={<Truck className="h-3.5 w-3.5" />} loading={busy}
-                      onClick={() => act(() => adminApi.setOrderStatus(selected.id, 'enviado'), 'Pedido marcado como enviado.')}>
-                      Enviado
-                    </Button>
-                  ) : null}
-                  {selected.orderStatus === 'enviado' ? (
-                    <Button variant="success" size="sm" icon={<CheckCircle2 className="h-3.5 w-3.5" />} loading={busy}
-                      onClick={() => act(() => adminApi.setOrderStatus(selected.id, 'entregue'), 'Pedido entregue.')}>
-                      Entregue
-                    </Button>
-                  ) : null}
-                  {selected.orderStatus !== 'cancelado' && selected.orderStatus !== 'entregue' ? (
-                    <Button variant="danger" size="sm" icon={<Ban className="h-3.5 w-3.5" />} loading={busy}
-                      onClick={() => act(() => adminApi.setOrderStatus(selected.id, 'cancelado'), 'Pedido cancelado; estoque devolvido.')}>
-                      Cancelar
-                    </Button>
-                  ) : null}
+                  )}
                 </div>
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<RefreshCw className="h-3.5 w-3.5" />}
+                  loading={busy}
+                  onClick={async () => {
+                    await run(async () => {
+                      let updated = selected;
+                      if (tracking && tracking !== selected.trackingCode) {
+                        const res = await adminApi.setTracking(selected.id, tracking);
+                        updated = res.order;
+                      }
+                      if (newStatus && newStatus !== selected.orderStatus) {
+                        const res = await adminApi.setOrderStatus(selected.id, newStatus, statusNote);
+                        updated = res.order;
+                      }
+                      setSelected(updated);
+                      await reload();
+                      toast.push(`Pedido ${selected.id} atualizado e sincronizado em tempo real.`, 'success');
+                      setStatusNote('');
+                    });
+                  }}
+                >
+                  Salvar e Sincronizar em Tempo Real
+                </Button>
               </div>
             </div>
 

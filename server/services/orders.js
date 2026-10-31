@@ -495,83 +495,121 @@ export function markPaid(orderId, { actor = 'painel', note = '' } = {}) {
 }
 
 export function changeStatus(orderId, status, { actor = 'painel', note = '' } = {}) {
- const existing = getOrder(orderId);
- if (!existing) throw new HttpError(404, 'Pedido não encontrado.', 'order_not_found');
- if (existing.orderStatus === status) return existing;
+  const existing = getOrder(orderId);
+  if (!existing) throw new HttpError(404, 'Pedido não encontrado.', 'order_not_found');
+  if (existing.orderStatus === status) return existing;
 
- const allowed = ORDER_FLOW[existing.orderStatus] || [];
- if (!allowed.includes(status)) {
- throw new HttpError(
- 409,
- `Transição inválida: ${STATUS_LABELS[existing.orderStatus]} → ${STATUS_LABELS[status] || status}.`,
- 'invalid_transition'
- );
- }
+  const validStatuses = ['aguardando_pagamento', 'pago', 'em_separacao', 'enviado', 'entregue', 'cancelado'];
+  if (!validStatuses.includes(status)) {
+    throw new HttpError(400, `Status inválido: ${status}.`, 'invalid_status');
+  }
 
- const updated = commit((data) => {
- const order = data.orders[findOrderIndex(data, orderId)];
+  const updated = commit((data) => {
+    const order = data.orders[findOrderIndex(data, orderId)];
+    const prevStatus = order.orderStatus;
 
- if (status === 'cancelado') {
- // devolve o estoque reservado
- for (const item of order.items) {
- const product = data.products.find((entry) => entry.id === item.productId);
- if (!product) continue;
- const key = `${item.selectedSize}-${item.selectedColor?.name}`;
- const before = Number(product.inventory[key] || 0);
- product.inventory = { ...product.inventory, [key]: before + item.quantity };
- product.inStock = true;
- data.stockMovements.unshift({
- id: nextId('mov'),
- at: nowIso(),
- productId: product.id,
- productName: product.name,
- sku: product.sku,
- variantKey: key,
- type: 'entrada',
- quantity: item.quantity,
- reason: 'estorno',
- note: `Cancelamento do pedido ${order.id}`,
- actor,
- balanceAfter: before + item.quantity,
- unitCost: Number(product.costPrice || 0)
- });
- data.counters.stockIn += item.quantity;
- }
+    if (status === 'cancelado' && prevStatus !== 'cancelado') {
+      // Devolve o estoque reservado
+      for (const item of order.items) {
+        const product = data.products.find((entry) => entry.id === item.productId);
+        if (!product) continue;
+        const key = `${item.selectedSize}-${item.selectedColor?.name}`;
+        const before = Number(product.inventory[key] || 0);
+        product.inventory = { ...product.inventory, [key]: before + item.quantity };
+        product.inStock = true;
+        data.stockMovements.unshift({
+          id: nextId('mov'),
+          at: nowIso(),
+          productId: product.id,
+          productName: product.name,
+          sku: product.sku,
+          variantKey: key,
+          type: 'entrada',
+          quantity: item.quantity,
+          reason: 'estorno',
+          note: `Cancelamento do pedido ${order.id}`,
+          actor,
+          balanceAfter: before + item.quantity,
+          unitCost: Number(product.costPrice || 0)
+        });
+        data.counters.stockIn += item.quantity;
+      }
 
- if (order.paymentStatus === 'confirmado') {
- order.paymentStatus = 'cancelado';
- data.cashflow.unshift({
- id: nextId('cf'),
- type: 'saida',
- title: `Estorno — Pedido ${order.id}`,
- category: 'outros',
- amount: Number(order.total || 0),
- date: nowIso(),
- orderId: order.id,
- notes: `Cancelamento após pagamento confirmado (${actor})`
- });
- }
- }
+      if (order.paymentStatus === 'confirmado') {
+        order.paymentStatus = 'cancelado';
+        data.cashflow.unshift({
+          id: nextId('cf'),
+          type: 'saida',
+          title: `Estorno — Pedido ${order.id}`,
+          category: 'outros',
+          amount: Number(order.total || 0),
+          date: nowIso(),
+          orderId: order.id,
+          notes: `Cancelamento após pagamento confirmado (${actor})`
+        });
+      }
+    } else if (prevStatus === 'cancelado' && status !== 'cancelado') {
+      // Reativação de pedido cancelado: re-deduz estoque
+      for (const item of order.items) {
+        const product = data.products.find((entry) => entry.id === item.productId);
+        if (!product) continue;
+        const key = `${item.selectedSize}-${item.selectedColor?.name}`;
+        const before = Number(product.inventory[key] || 0);
+        const after = Math.max(0, before - item.quantity);
+        product.inventory = { ...product.inventory, [key]: after };
+        data.stockMovements.unshift({
+          id: nextId('mov'),
+          at: nowIso(),
+          productId: product.id,
+          productName: product.name,
+          sku: product.sku,
+          variantKey: key,
+          type: 'saida',
+          quantity: item.quantity,
+          reason: 'pedido',
+          note: `Reativação do pedido ${order.id}`,
+          actor,
+          balanceAfter: after,
+          unitCost: Number(product.costPrice || 0)
+        });
+        data.counters.stockOut += item.quantity;
+      }
+    }
 
- if (status === 'pago' && order.paymentStatus !== 'confirmado') {
- order.paymentStatus = 'confirmado';
- }
+    if (['pago', 'em_separacao', 'enviado', 'entregue'].includes(status) && order.paymentStatus !== 'confirmado') {
+      order.paymentStatus = 'confirmado';
+      const hasIncome = data.cashflow.some((entry) => entry.orderId === order.id && entry.type === 'entrada');
+      if (!hasIncome) {
+        data.cashflow.unshift({
+          id: nextId('cf'),
+          type: 'entrada',
+          title: `Venda confirmada — Pedido ${order.id}`,
+          category: 'venda',
+          amount: Number(order.total || 0),
+          date: nowIso(),
+          orderId: order.id,
+          notes: `${PAYMENT_LABELS[order.paymentMethod] || 'Pagamento'} • ${order.lead.fullName} • por ${actor}`
+        });
+        data.counters.ordersPaid += 1;
+      }
+    }
 
- order.orderStatus = status;
- order.updatedAt = nowIso();
- pushHistory(order, status, note || `Status alterado para ${STATUS_LABELS[status] || status} por ${actor}.`);
- return order;
- }, { event: 'order.status', payload: { id: orderId, status } });
+    order.orderStatus = status;
+    order.updatedAt = nowIso();
+    pushHistory(order, status, note || `Status alterado para ${STATUS_LABELS[status] || status} por ${actor}.`);
+    syncCustomerWithOrder(data, order);
+    return order;
+  }, { event: 'order.status', payload: { id: orderId, status } });
 
- notify({
- type: 'order_status',
- title: ` ${updated.id} — ${STATUS_LABELS[status] || status}`,
- detail: `${updated.lead.fullName} • ${brl(updated.total)}${note ? ` • ${note}` : ''}`,
- severity: status === 'cancelado' ? 'warning' : 'info',
- meta: { orderId: updated.id, status, customer: updated.lead.fullName, total: updated.total, actor }
- });
+  notify({
+    type: 'order_status',
+    title: `Pedido ${updated.id} — ${STATUS_LABELS[status] || status}`,
+    detail: `${updated.lead.fullName} • ${brl(updated.total)}${note ? ` • ${note}` : ''}`,
+    severity: status === 'cancelado' ? 'warning' : 'info',
+    meta: { orderId: updated.id, status, customer: updated.lead.fullName, total: updated.total, actor }
+  });
 
- return updated;
+  return updated;
 }
 
 export function setTrackingCode(orderId, trackingCode, { actor = 'painel' } = {}) {
