@@ -162,6 +162,15 @@ export interface CustomerSession {
   createdAt: string;
   ordersCount: number;
   totalSpent: number;
+  addresses?: Array<{
+    cep: string;
+    street: string;
+    number: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+  }>;
 }
 
 /* ------------------------ Painel (caminho cifrado) ------------------------ */

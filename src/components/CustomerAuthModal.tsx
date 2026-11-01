@@ -100,13 +100,13 @@ export const CustomerAuthModal: React.FC = () => {
 
   // Sync profile edit form with customerUser data
   useEffect(() => {
-    if (!isAuthOpen || activeTab !== 'compras') return;
+    if (!isAuthOpen || profileTab !== 'purchases') return;
     refreshOrders();
     const timer = setInterval(() => {
       refreshOrders();
     }, 6000);
     return () => clearInterval(timer);
-  }, [isAuthOpen, activeTab, refreshOrders]);
+  }, [isAuthOpen, profileTab, refreshOrders]);
 
   useEffect(() => {
     if (customerUser) {

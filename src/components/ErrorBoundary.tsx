@@ -36,6 +36,11 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
           <p className="mt-2 text-xs leading-relaxed text-stone-500">
             Encontramos um erro ao exibir esta parte da loja. Seus dados e seu carrinho estão preservados.
           </p>
+          {this.state.error && (
+            <p className="mt-2 text-[10px] text-stone-400 font-mono break-words bg-stone-50 p-2 rounded-lg border border-stone-200 text-left">
+              {this.state.error.message || String(this.state.error)}
+            </p>
+          )}
           <div className="mt-5 flex flex-col gap-2">
             <button
               onClick={() => this.setState({ error: null })}
