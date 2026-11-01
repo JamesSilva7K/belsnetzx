@@ -89,7 +89,7 @@ export async function fetchAddressByCep(cepRaw: string): Promise<CepResult | nul
     });
     if (res.ok) {
       const data = await res.json();
-      if (!data.erro) {
+      if (!data.erro && data.localidade) {
         return {
           cep: cleanCep,
           street: data.logradouro || '',
@@ -98,34 +98,12 @@ export async function fetchAddressByCep(cepRaw: string): Promise<CepResult | nul
           state: data.uf || '',
         };
       }
+      return null;
     }
   } catch (err) {
-    console.warn('ViaCEP offline, usando autocompletar de fallback', err);
+    console.warn('[ViaCEP] Falha na consulta de CEP:', err);
   }
-
-  // Fallback baseado nos primeiros dígitos dos CEPs brasileiros
-  const firstDigit = cleanCep[0];
-  const statesMap: Record<string, { city: string, state: string, street: string, neighborhood: string }> = {
-    '0': { city: 'São Paulo', state: 'SP', street: 'Avenida Paulista', neighborhood: 'Bela Vista' },
-    '1': { city: 'Campinas', state: 'SP', street: 'Avenida Francisco Glicério', neighborhood: 'Centro' },
-    '2': { city: 'Rio de Janeiro', state: 'RJ', street: 'Avenida Atlântica', neighborhood: 'Copacabana' },
-    '3': { city: 'Belo Horizonte', state: 'MG', street: 'Avenida Afonso Pena', neighborhood: 'Funcionários' },
-    '4': { city: 'Salvador', state: 'BA', street: 'Avenida Sete de Setembro', neighborhood: 'Barra' },
-    '5': { city: 'Recife', state: 'PE', street: 'Avenida Boa Viagem', neighborhood: 'Boa Viagem' },
-    '6': { city: 'Fortaleza', state: 'CE', street: 'Avenida Beira Mar', neighborhood: 'Meireles' },
-    '7': { city: 'Brasília', state: 'DF', street: 'Asa Sul SQS 308', neighborhood: 'Asa Sul' },
-    '8': { city: 'Curitiba', state: 'PR', street: 'Rua das Flores', neighborhood: 'Batel' },
-    '9': { city: 'Porto Alegre', state: 'RS', street: 'Avenida Carlos Gomes', neighborhood: 'Moinhos de Vento' },
-  };
-
-  const matched = statesMap[firstDigit] || { city: 'São Paulo', state: 'SP', street: 'Rua Oscar Freire', neighborhood: 'Jardins' };
-  return {
-    cep: cleanCep,
-    street: matched.street,
-    neighborhood: matched.neighborhood,
-    city: matched.city,
-    state: matched.state,
-  };
+  return null;
 }
 
 export interface SocialValidationResult {
