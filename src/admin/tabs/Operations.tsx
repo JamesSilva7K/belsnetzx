@@ -398,7 +398,7 @@ export function OrdersTab({ liveKey }: { liveKey: number }) {
                   const itemStatus = 
                     selected.orderStatus === 'entregue' ? 'Entregue' :
                     selected.orderStatus === 'enviado' ? 'Em trânsito' :
-                    selected.orderStatus === 'em_separacao' ? 'No atelier' :
+                    selected.orderStatus === 'em_separacao' ? 'Em separação' :
                     selected.orderStatus === 'pago' ? 'Pronto para separação' :
                     selected.orderStatus === 'cancelado' ? 'Cancelado' : 'Aguardando pagamento';
                   const itemTone = STATUS_TONE[selected.orderStatus] || 'neutral';
@@ -459,7 +459,7 @@ export function OrdersTab({ liveKey }: { liveKey: number }) {
                 {[
                   { key: 'aguardando_pagamento', label: '1. Aguardando', icon: Clock },
                   { key: 'pago', label: '2. Pago', icon: BadgeDollarSign },
-                  { key: 'em_separacao', label: '3. No Atelier', icon: Package },
+                  { key: 'em_separacao', label: '3. Em Separação', icon: Package },
                   { key: 'enviado', label: '4. Enviado', icon: Truck },
                   { key: 'entregue', label: '5. Entregue', icon: CheckCircle2 }
                 ].map((step) => {
@@ -492,7 +492,7 @@ export function OrdersTab({ liveKey }: { liveKey: number }) {
                     <Select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
                       <option value="aguardando_pagamento">Aguardando pagamento</option>
                       <option value="pago">Pago / Confirmado</option>
-                      <option value="em_separacao">Em separação no atelier</option>
+                      <option value="em_separacao">Em separação no estoque</option>
                       <option value="enviado">Enviado / Em trânsito</option>
                       <option value="entregue">Entregue</option>
                       <option value="cancelado">Cancelado (estorno)</option>

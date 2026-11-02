@@ -70,7 +70,7 @@ export const CheckoutModal: React.FC = () => {
   const [isFetchingCep, setIsFetchingCep] = useState(false);
 
   // Shipping
-  const [shippingMethod, setShippingMethod] = useState<'PAC' | 'SEDEX' | 'Atelier'>('SEDEX');
+  const [shippingMethod, setShippingMethod] = useState<'PAC' | 'SEDEX'>('SEDEX');
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card' | 'boleto'>('pix');
@@ -318,7 +318,7 @@ export const CheckoutModal: React.FC = () => {
       icon={<ShieldCheck size={22} />}
       eyebrow="Checkout"
       title={step === 4 ? 'Pedido registrado' : 'Finalizar pedido'}
-      subtitle={step === 4 ? 'Acompanhe o status pela sua conta ou pelo WhatsApp do atelier' : 'Identificação, entrega e pagamento seguros'}
+      subtitle={step === 4 ? 'Acompanhe o status pela sua conta ou pelo WhatsApp da loja' : 'Identificação, entrega e pagamento seguros'}
       tabs={step < 4 ? stepTracker : undefined}
       size="xl"
     >
@@ -339,7 +339,7 @@ export const CheckoutModal: React.FC = () => {
                 <div className="flex items-center justify-between rounded-2xl bg-rose-50/80 border border-rose-200/80 p-3.5 text-xs text-stone-700">
                   <span className="flex items-center gap-2">
                     <User className="h-4 w-4 text-[#DC7898]" />
-                    <span>Já possui cadastro no atelier? Acesse sua conta para preenchimento automático.</span>
+                    <span>Já possui cadastro na loja? Acesse sua conta para preenchimento automático.</span>
                   </span>
                   <button
                     type="button"
@@ -573,7 +573,7 @@ export const CheckoutModal: React.FC = () => {
                 <label className="text-xs font-semibold text-stone-700 block mb-2">
                   Escolha o tipo de Envio:
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div
                     onClick={() => setShippingMethod('SEDEX')}
                     className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
@@ -608,20 +608,7 @@ export const CheckoutModal: React.FC = () => {
                     <p className="text-[11px] text-stone-500">4 a 7 dias úteis</p>
                   </div>
 
-                  <div
-                    onClick={() => setShippingMethod('Atelier')}
-                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
-                      shippingMethod === 'Atelier'
-                        ? 'border-rose-500 bg-rose-50/80 ring-2 ring-rose-200'
-                        : 'border-stone-200 hover:border-rose-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-xs text-stone-900">Retirada Atelier</span>
-                      <span className="text-xs font-bold text-emerald-700">GRÁTIS</span>
-                    </div>
-                    <p className="text-[11px] text-stone-500">Jardins, São Paulo - SP</p>
-                  </div>
+                  
                 </div>
               </div>
 
@@ -975,7 +962,7 @@ export const CheckoutModal: React.FC = () => {
                     Pagamento Pix Confirmado com Sucesso!
                   </h4>
                   <p className="text-xs text-emerald-700">
-                    O pagamento foi identificado e aprovado instantaneamente pelo sistema. Seu pedido já está sendo preparado com muito carinho pelo atelier Flor de Seda.
+                    O pagamento foi identificado e aprovado instantaneamente pelo sistema. Seu pedido já está sendo preparado com muito carinho pelo loja Flor de Seda.
                   </p>
                 </div>
               ) : placedOrder.paymentMethod === 'pix' && (
@@ -1008,7 +995,7 @@ export const CheckoutModal: React.FC = () => {
                     </>
                   ) : (
                     <p className="text-xs text-stone-600">
-                      A chave Pix da loja ainda não está configurada. Fale com o atelier pelo WhatsApp para receber o código de pagamento deste pedido.
+                      A chave Pix da loja ainda não está configurada. Fale com a loja pelo WhatsApp para receber o código de pagamento deste pedido.
                     </p>
                   )}
                 </div>
@@ -1091,7 +1078,7 @@ export const CheckoutModal: React.FC = () => {
                   className="w-full sm:w-auto px-6 py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  <span>Acompanhar no WhatsApp do Atelier</span>
+                  <span>Acompanhar no WhatsApp da Loja</span>
                 </a>
 
                 <button

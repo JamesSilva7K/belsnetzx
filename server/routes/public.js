@@ -10,7 +10,7 @@ import { createOrder, getPublicOrder, quoteShipping, customerOrders, markPaid } 
 import { publicSettings, listBanners } from '../services/settings.js';
 import { evaluateCoupon } from '../services/coupons.js';
 import { syncCart } from '../services/carts.js';
-import { registerCustomer, loginCustomer, resolveCustomerToken, logoutCustomer, customerProfile, updateCustomerProfile } from '../services/customers.js';
+import { registerCustomer, loginCustomer, resolveCustomerToken, logoutCustomer, customerProfile, updateCustomerProfile, syncCustomerWishlist } from '../services/customers.js';
 import { handleUpdate } from '../services/telegram-bot.js';
 import { processSyncPayWebhook, checkSyncPayTransaction } from '../services/syncpay.js';
 
@@ -93,20 +93,33 @@ router.post(
     const { productId, rating, comment, fitFeedback, name, email } = req.body || {};
     const { customer } = customerFromRequest(req);
     const authorEmail = customer?.email || normalizeEmail(email || '');
-    const verifiedBuyer = Boolean(
-      db().orders.some(
-        (order) => normalizeEmail(order.lead.email) === authorEmail && order.orderStatus === 'entregue'
-      )
+    if (!authorEmail) {
+      throw new HttpError(401, 'Faça login com sua conta para avaliar esta peça.', 'login_required');
+    }
+
+    // Apenas clientes com compras pagas/confirmadas contendo este produto
+    const dbData = db();
+    const customerOrders = dbData.orders.filter(
+      (order) => (normalizeEmail(order.lead.email) === authorEmail || order.customerId === customer?.id) &&
+                 ['pago', 'em_separacao', 'enviado', 'entregue'].includes(order.orderStatus)
     );
+    const hasPurchased = customerOrders.some((order) =>
+      order.items?.some((item) => String(item.id || item.productId) === String(productId))
+    );
+
+    if (!hasPurchased) {
+      throw new HttpError(403, 'Apenas clientes que compraram esta peça podem enviar uma avaliação verificada.', 'purchase_required');
+    }
+
     const review = upsertReview({
       productId,
       customerId: customer?.id || null,
-      authorName: customer?.fullName || String(name || '').trim() || 'Cliente',
+      authorName: customer?.fullName || String(name || '').trim() || 'Cliente Verificada',
       rating,
       comment,
       fitFeedback
     });
-    res.status(201).json({ ok: true, review: { ...review, verifiedBuyer } });
+    res.status(201).json({ ok: true, review: { ...review, verifiedBuyer: true } });
   })
 );
 
@@ -241,6 +254,14 @@ router.patch('/auth/me', asyncHandler((req, res) => {
   const { customer } = customerFromRequest(req);
   if (!customer) throw new HttpError(401, 'Sessão expirada. Faça login novamente.', 'unauthorized');
   const updated = updateCustomerProfile(customer.id, req.body || {});
+  res.json({ ok: true, customer: updated });
+}));
+
+router.put('/customer/wishlist', asyncHandler((req, res) => {
+  const { customer } = customerFromRequest(req);
+  if (!customer) throw new HttpError(401, 'Entre na sua conta para sincronizar suas peças salvas.', 'unauthorized');
+  const wishlist = Array.isArray(req.body?.wishlist) ? req.body.wishlist : [];
+  const updated = syncCustomerWishlist(customer.id, wishlist);
   res.json({ ok: true, customer: updated });
 }));
 

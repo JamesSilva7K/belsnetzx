@@ -808,7 +808,7 @@ export const CustomerAuthModal: React.FC = () => {
                         >
                           <option value="all">Todos os Status</option>
                           <option value="pago">Pago / Aprovado</option>
-                          <option value="em_separacao">No Atelier</option>
+                          <option value="em_separacao">Em Separação</option>
                           <option value="enviado">Enviado / A Caminho</option>
                           <option value="entregue">Entregue</option>
                           <option value="aguardando_pagamento">Pendente</option>
@@ -962,7 +962,7 @@ export const CustomerAuthModal: React.FC = () => {
                                   }`}
                                 >
                                   {ord.orderStatus === 'em_separacao'
-                                    ? 'No Atelier'
+                                    ? 'Em Separação'
                                     : ord.orderStatus === 'enviado'
                                     ? 'Enviado'
                                     : ord.orderStatus === 'entregue'
@@ -992,7 +992,7 @@ export const CustomerAuthModal: React.FC = () => {
                                         : ord.orderStatus === 'enviado'
                                         ? 'A caminho do seu endereço'
                                         : ord.orderStatus === 'em_separacao'
-                                        ? 'Em preparação no atelier Flor de Seda'
+                                        ? 'Em preparação na loja Flor de Seda'
                                         : isPaid
                                         ? 'Pagamento aprovado · Aguardando separação'
                                         : 'Aguardando confirmação de pagamento'}
@@ -1005,7 +1005,7 @@ export const CustomerAuthModal: React.FC = () => {
                                   <div className="grid grid-cols-4 gap-1.5">
                                     {[
                                       { label: '1. Aprovado', active: isPaid || ['em_separacao', 'enviado', 'entregue'].includes(ord.orderStatus) },
-                                      { label: '2. Atelier', active: ['em_separacao', 'enviado', 'entregue'].includes(ord.orderStatus) },
+                                      { label: '2. Separação', active: ['em_separacao', 'enviado', 'entregue'].includes(ord.orderStatus) },
                                       { label: '3. A Caminho', active: ['enviado', 'entregue'].includes(ord.orderStatus) },
                                       { label: '4. Entregue', active: ord.orderStatus === 'entregue' }
                                     ].map((st, sIdx) => (
@@ -1118,8 +1118,7 @@ export const CustomerAuthModal: React.FC = () => {
                                             ? 'Item Entregue'
                                             : ord.orderStatus === 'enviado'
                                             ? 'Em Trânsito'
-                                            : ord.orderStatus === 'em_separacao'
-                                            ? 'No Atelier'
+                                            : ord.orderStatus === 'em_separacao' ? 'Em Separação'
                                             : isPaid
                                             ? 'Pronto para Separação'
                                             : 'Aguardando Pagamento'}

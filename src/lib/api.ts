@@ -147,6 +147,11 @@ export const shopApi = {
     body: JSON.stringify(body)
   }),
   myOrders: () => request<{ orders: Order[] }>(`${PUBLIC_BASE}/me/orders`),
+  saveWishlist: (wishlist: string[]) =>
+    request<{ ok: boolean; customer: CustomerSession }>(`${PUBLIC_BASE}/customer/wishlist`, {
+      method: 'PUT',
+      body: JSON.stringify({ wishlist })
+    }),
   newsletter: (email: string) =>
     request<{ ok: boolean }>(`${PUBLIC_BASE}/newsletter`, { method: 'POST', body: JSON.stringify({ email }) }),
   health: () => request<{ ok: boolean; uptimeSeconds: number }>(`${PUBLIC_BASE}/health`)
@@ -162,6 +167,7 @@ export interface CustomerSession {
   createdAt: string;
   ordersCount: number;
   totalSpent: number;
+  wishlist?: string[];
   addresses?: Array<{
     cep: string;
     street: string;

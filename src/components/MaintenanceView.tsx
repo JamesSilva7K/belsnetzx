@@ -22,17 +22,17 @@ export const MaintenanceView: React.FC = () => {
           {customization?.companyName || 'Flor de Seda'}
         </h1>
         <p className="text-xs uppercase tracking-widest text-[#DC7898] font-bold mb-6">
-          Atelier de Alta Costura
+          Loja de Moda Feminina
         </p>
 
         <div className="bg-rose-50/60 border border-rose-100 rounded-2xl p-5 mb-8 text-left">
           <h2 className="text-sm font-semibold text-stone-800 mb-1.5 flex items-center gap-2">
             <Lock className="w-4 h-4 text-[#DC7898]" />
-            {customization?.maintenanceTitle || 'Atelier em Manutenção Programada'}
+            {customization?.maintenanceTitle || 'Loja em Manutenção Programada'}
           </h2>
           <p className="text-xs text-stone-600 font-light leading-relaxed">
             {customization?.maintenanceMessage ||
-              'Estamos organizando novas coleções e peças exclusivas no atelier. Retornaremos em instantes para recebê-la com todo o carinho!'}
+              'Estamos organizando novas coleções e peças exclusivas na loja. Retornaremos em instantes para recebê-la com todo o carinho!'}
           </p>
         </div>
 

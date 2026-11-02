@@ -10,7 +10,7 @@ export const FeaturesBanner: React.FC = () => {
     {
       icon: Truck,
       title: 'Frete calculado no checkout',
-      description: `PAC, SEDEX ou retirada no atelier. Frete grátis a partir de ${formatCurrency(
+      description: `PAC ou SEDEX Correios com rastreio. Frete grátis a partir de ${formatCurrency(
         shippingConfig.freeThreshold
       )} e acompanhamento pelo código de rastreio.`
     },
@@ -25,7 +25,7 @@ export const FeaturesBanner: React.FC = () => {
       title: pixConfig.configured ? 'Pix com código oficial' : 'Pagamento acompanhado',
       description: pixConfig.configured
         ? 'O código Pix é gerado pelo sistema no padrão do Banco Central e a confirmação fica registrada no painel da loja.'
-        : 'Cada pedido é conferido pelo atelier antes da confirmação de pagamento — sem cobranças automáticas.'
+        : 'Cada pedido é conferido pela equipe da loja antes da confirmação de pagamento — sem cobranças automáticas.'
     },
     {
       icon: Store,

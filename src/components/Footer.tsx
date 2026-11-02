@@ -70,7 +70,7 @@ export const Footer: React.FC = () => {
         </h3>
         
         <p className="text-xs sm:text-sm text-stone-500 font-light max-w-lg mx-auto mb-8">
-          Inspirações diárias de composições românticas, bastidores do atelier e lançamentos exclusivos.
+          Inspirações diárias de composições românticas, bastidores da marca e lançamentos exclusivos.
         </p>
 
         {/* Instagram Grid Showcase - Delicate Curated Boutique Fashion */}

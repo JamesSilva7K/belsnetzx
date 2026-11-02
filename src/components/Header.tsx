@@ -128,7 +128,7 @@ export const Header: React.FC = () => {
               <form onSubmit={handleSearchSubmit} className="relative w-full">
                 <input
                   type="text"
-                  placeholder="O que você está buscando no atelier?"
+                  placeholder="O que você está buscando na loja?"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-white text-stone-800 text-xs sm:text-sm placeholder:text-stone-400 pl-5 pr-10 py-2.5 rounded-full shadow-inner focus:outline-none focus:ring-2 focus:ring-rose-300 transition-all"

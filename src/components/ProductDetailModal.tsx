@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import type { Product } from '../types';
 import { formatCurrency, formatCEP, fetchAddressByCep } from '../utils/validators';
@@ -38,7 +38,10 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
     userBodyProfile,
     openProvadorVirtual,
     appliedSizeFromProvador,
-    setAppliedSizeFromProvador
+    setAppliedSizeFromProvador,
+    customerUser,
+    orders,
+    setIsAuthOpen
   } = useStore();
 
   const reviews = getProductReviews(product.id);
@@ -65,8 +68,7 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
     pacDays: string;
     sedexPrice: string;
     sedexDays: string;
-    atelierAvailable: boolean;
-  } | null>(null);
+      } | null>(null);
   const [isCalculatingCep, setIsCalculatingCep] = useState(false);
 
   // New review form
@@ -77,6 +79,15 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
   const [revComment, setRevComment] = useState('');
   const [revFit, setRevFit] = useState<'fiel ao tamanho' | 'ficou pequeno' | 'ficou grande'>('fiel ao tamanho');
   const [reviewSuccess, setReviewSuccess] = useState(false);
+
+  
+  const hasPurchasedThisProduct = useMemo(() => {
+    if (!customerUser) return false;
+    return orders.some((order) =>
+      ['pago', 'em_separacao', 'enviado', 'entregue'].includes(order.orderStatus) &&
+      order.items?.some((item) => String(item.productId) === String(product.id))
+    );
+  }, [customerUser, orders, product.id]);
 
   const isWished = isInWishlist(product.id);
   const variantKey = `${selectedSize}-${selectedColor.name}`;
@@ -127,8 +138,7 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
       const isFree = shippingConfig.freeThreshold > 0 && product.price >= shippingConfig.freeThreshold;
       const pacOption = shippingConfig.options.find((entry) => entry.method === 'PAC');
       const sedexOption = shippingConfig.options.find((entry) => entry.method === 'SEDEX');
-      const atelierOption = shippingConfig.options.find((entry) => entry.method === 'Atelier');
-
+      
       setShippingCalcResult({
         cepFormatted: `${cleanCep.slice(0, 5)}-${cleanCep.slice(5)}`,
         street: addr.street,
@@ -142,8 +152,7 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
         pacDays: '4 a 8 dias úteis',
         sedexPrice: formatCurrency(sedexOption?.price ?? 34.9),
         sedexDays: '1 a 3 dias úteis',
-        atelierAvailable: Boolean(atelierOption)
-      });
+              });
     } else {
       setFeedbackMsg({ type: 'error', text: 'CEP não encontrado na base oficial dos Correios. Verifique o número digitado.' });
       setTimeout(() => setFeedbackMsg(null), 4000);
@@ -152,31 +161,34 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!revName.trim() || !revComment.trim()) return;
-
-    const result = await addReview({
-      productId: product.id,
-      name: revName.trim(),
-      email: revEmail.trim(),
-      rating: revRating,
-      comment: revComment.trim(),
-      fitFeedback: revFit
-    });
-
-    if (!result.ok) {
-      setFeedbackMsg({ type: 'error', text: result.error || 'Não foi possível enviar sua avaliação.' });
-      setTimeout(() => setFeedbackMsg(null), 4000);
+    if (!customerUser) {
+      setIsAuthOpen(true);
       return;
     }
-
-    setReviewSuccess(true);
-    setRevName('');
-    setRevEmail('');
-    setRevComment('');
-    setTimeout(() => {
-      setReviewSuccess(false);
-      setShowReviewForm(false);
-    }, 2000);
+    if (!hasPurchasedThisProduct) {
+      setFeedbackMsg({ type: 'error', text: 'Apenas clientes que compraram esta peça podem enviar uma avaliação.' });
+      setTimeout(() => setFeedbackMsg(null), 3500);
+      return;
+    }
+    const res = await addReview({
+      productId: product.id,
+      name: customerUser.name || customerUser.fullName || revName || 'Cliente Verificada',
+      email: customerUser.email,
+      rating: revRating,
+      comment: revComment,
+      fitFeedback: revFit
+    });
+    if (res.ok) {
+      setReviewSuccess(true);
+      setRevComment('');
+      setTimeout(() => {
+        setReviewSuccess(false);
+        setShowReviewForm(false);
+      }, 3000);
+    } else {
+      setFeedbackMsg({ type: 'error', text: res.error || 'Não foi possível enviar a avaliação.' });
+      setTimeout(() => setFeedbackMsg(null), 3500);
+    }
   };
 
   const discountPercent = product.compareAtPrice && product.compareAtPrice > product.price
@@ -356,7 +368,7 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
                       com <strong className="text-emerald-700 font-semibold">{pixConfig.discountForPixPercent}% OFF no PIX</strong>.
                     </>
                   ) : (
-                    <>pagamento por Pix, cartão ou boleto combinado com o atelier.</>
+                    <>pagamento por Pix, cartão ou boleto combinado com a loja.</>
                   )}
                 </p>
               </div>
@@ -506,7 +518,7 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
                   ) : currentStock > 3 ? (
                     <span className="text-emerald-700 font-medium flex items-center gap-1.5">
                       <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      Disponível no Atelier para envio imediato ({currentStock} peças)
+                      Disponível no Estoque da Loja para envio imediato ({currentStock} peças)
                     </span>
                   ) : (
                     <span className="text-rose-500 font-medium">
@@ -670,25 +682,7 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
                         </span>
                       </div>
 
-                      {/* Retirada no Atelier */}
-                      {shippingCalcResult.atelierAvailable && (
-                        <div className="flex justify-between items-center p-2.5 rounded-xl bg-white border border-rose-100 hover:border-rose-200 transition-all shadow-2xs">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-2 h-2 rounded-full bg-stone-400 shrink-0" />
-                            <div>
-                              <p className="font-semibold text-stone-900 text-xs flex items-center gap-1.5">
-                                <span>Retirada no Atelier</span>
-                                <span className="text-[10px] font-normal text-stone-500">(1 dia útil)</span>
-                              </p>
-                              <p className="text-[10px] text-stone-500">Alameda Lorena, Jardins · São Paulo/SP</p>
-                            </div>
-                          </div>
-                          <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 text-xs">
-                            GRÁTIS
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                      </div>
                   </div>
                 )}
               </div>
@@ -754,17 +748,40 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
 
                 {activeTab === 'avaliacoes' && (
                   <div className="space-y-4 animate-fade-in">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-stone-900">Opiniões de quem já comprou:</span>
-                      <button
-                        onClick={() => setShowReviewForm(!showReviewForm)}
-                        className="px-3.5 py-1 rounded-full bg-rose-100 text-[#DC7898] hover:bg-[#DC7898] hover:text-white transition-colors text-xs font-semibold"
-                      >
-                        {showReviewForm ? 'Fechar Formulário' : '+ Deixar Avaliação'}
-                      </button>
+                    <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-rose-100">
+                      <div>
+                        <span className="font-semibold text-stone-900 text-xs block">Opiniões de quem já comprou:</span>
+                        <span className="text-[10px] text-stone-500">Avaliações 100% reais e auditadas de clientes verificadas</span>
+                      </div>
+                      {!customerUser ? (
+                        <button
+                          type="button"
+                          onClick={() => setIsAuthOpen(true)}
+                          className="px-3.5 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-[#DC7898] border border-rose-200 text-xs font-semibold flex items-center gap-1.5 transition-colors self-start sm:self-auto cursor-pointer"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5 text-[#DC7898]" />
+                          <span>Entrar para Avaliar</span>
+                        </button>
+                      ) : !hasPurchasedThisProduct ? (
+                        <span className="text-[11px] text-stone-500 bg-stone-100 px-3 py-1 rounded-full font-medium inline-flex items-center gap-1 self-start sm:self-auto">
+                          <ShieldCheck className="w-3 h-3 text-stone-400" />
+                          <span>Exclusivo para quem adquiriu a peça</span>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowReviewForm(!showReviewForm)}
+                          className="px-3.5 py-1.5 rounded-full bg-[#DC7898] hover:bg-[#C65677] text-white transition-colors text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer self-start sm:self-auto"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>{showReviewForm ? 'Fechar Formulário' : '+ Deixar Avaliação Verificada'}</span>
+                        </button>
+                      )}
                     </div>
+                  </div>
 
-                    {showReviewForm && (
+                  {showReviewForm && (
                       <form onSubmit={handleSubmitReview} className="p-4 rounded-2xl bg-rose-50/60 border border-rose-200 space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <input
@@ -843,7 +860,7 @@ const ProductDetailContent: React.FC<{ product: Product }> = ({ product }) => {
                     ) : (
                       <div className="p-6 text-center rounded-2xl bg-gradient-to-b from-[#FFF5F8] to-white border border-rose-100/80">
                         <Sparkles className="w-5 h-5 text-[#DC7898] mx-auto mb-2" />
-                        <h4 className="font-serif text-sm font-medium text-stone-800">Peça Exclusiva do Ateliê</h4>
+                        <h4 className="font-serif text-sm font-medium text-stone-800">Peça Exclusiva da Loja</h4>
                         <p className="text-xs text-stone-500 font-light mt-1 max-w-sm mx-auto">
                           Ainda não há avaliações registradas para este modelo. Seja a primeira a vivenciar a experiência e compartilhar suas impressões sobre o tecido e o caimento.
                         </p>

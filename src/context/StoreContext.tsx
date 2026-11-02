@@ -206,14 +206,14 @@ const FALLBACK_CUSTOMIZATION: StoreCustomization = {
     cep: '01424-002',
     street: 'Alameda Lorena',
     number: '1420',
-    complement: 'Atelier',
+    complement: 'Loja',
     neighborhood: 'Jardins',
     city: 'São Paulo',
     state: 'SP'
   },
   storeStatus: 'online',
-  maintenanceTitle: 'Atelier Flor de Seda em Atualização',
-  maintenanceMessage: 'Estamos organizando novas coleções e peças exclusivas no atelier. Retornaremos em instantes para recebê-la com todo o carinho!',
+  maintenanceTitle: 'Flor de Seda | Loja em Atualização',
+  maintenanceMessage: 'Estamos organizando novas coleções e peças exclusivas na loja de roupas femininas. Retornaremos em instantes para recebê-la com todo o carinho!',
   antiCopyProtection: true,
   greetingMessage: 'Olá! Gostaria de tirar uma dúvida.',
   primaryColor: '#DC7898',
@@ -351,7 +351,21 @@ useEffect(() => {
   /* ------------------------- Persistência local ------------------------- */
 
   useEffect(() => writeLocal(CART_KEY, cart), [cart]);
-  useEffect(() => writeLocal(WISHLIST_KEY, wishlist), [wishlist]);
+  
+  // Carrega e mescla a lista de peças salvas do cliente autenticado
+  useEffect(() => {
+    if (customerUser?.wishlist && Array.isArray(customerUser.wishlist) && customerUser.wishlist.length > 0) {
+      setWishlist((prev) => Array.from(new Set([...prev, ...customerUser.wishlist!])));
+    }
+  }, [customerUser?.id]);
+
+  useEffect(() => {
+    writeLocal(WISHLIST_KEY, wishlist);
+    if (customerUser && customerToken.get()) {
+      shopApi.saveWishlist(wishlist).catch(() => {});
+    }
+  }, [wishlist, customerUser]);
+
   useEffect(() => writeLocal(BODY_KEY, userBodyProfile), [userBodyProfile]);
 
   /* --------------- Sincronização real do carrinho (servidor) --------------- */
@@ -443,7 +457,7 @@ useEffect(() => {
       options: [
         { method: 'PAC', label: 'PAC (4 a 8 dias úteis)', price: Number(shipping?.pac ?? 19.9) },
         { method: 'SEDEX', label: 'SEDEX (1 a 3 dias úteis)', price: Number(shipping?.sedex ?? 34.9) },
-        { method: 'Atelier', label: 'Retirada no atelier', price: 0 }
+        
       ]
     };
   }, [payload]);

@@ -6,6 +6,8 @@ import {
   CheckCircle2,
   Copy,
   Eye,
+  Globe,
+  X,
   EyeOff,
   KeyRound,
   Link2,
@@ -111,24 +113,10 @@ export function FinanceTab({ liveKey }: { liveKey: number }) {
           subtitle="vendas confirmadas + lançamentos manuais em tempo real"
           action={
             <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                icon={<Trash2 className="h-3.5 w-3.5 text-red-400" />}
-                onClick={async () => {
-                  if (!window.confirm('Deseja zerar os pedidos e lançamentos de teste para começar o painel 100% limpo com vendas reais?')) return;
-                  const res = await run(async () => {
-                    await adminApi.clearTestData();
-                  });
-                  toast.push(res.ok ? 'Dados de teste zerados! Painel pronto para vendas reais.' : 'Falha ao zerar.', res.ok ? 'success' : 'error');
-                  await Promise.all([reload(), cashflow.reload()]);
-                }}
-              >
-                Zerar Dados de Teste
-              </Button>
-              <Button size="sm" variant="primary" icon={<Plus className="h-3.5 w-3.5" />} onClick={() => setOpen(true)}>
-                Novo lançamento
-              </Button>
+              <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-3 py-1 text-xs font-semibold flex items-center gap-1.5 shadow-2xs">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Valores 100% Reais da Gateway
+              </span>
             </div>
           }
         />
@@ -149,9 +137,7 @@ export function FinanceTab({ liveKey }: { liveKey: number }) {
                   {entry.type === 'entrada' ? '+' : '−'} {formatBRL(entry.amount)}
                 </Td>
                 <Td>
-                  <button className="rounded-lg p-1.5 text-stone-500 hover:bg-red-500/10 hover:text-red-300" onClick={() => remove(entry.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  <span className="text-[10px] text-stone-500 font-mono">Gateway Oficial</span>
                 </Td>
               </tr>
             ))}
@@ -544,6 +530,12 @@ export function SettingsTab({ liveKey }: { liveKey: number }) {
   const toast = useToast();
 
   const [customization, setCustomization] = useState<any>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  } | null>(null);
   const [gateway, setGateway] = useState<any>(null);
   const [shipping, setShipping] = useState<any>(null);
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
@@ -835,6 +827,76 @@ export function SettingsTab({ liveKey }: { liveKey: number }) {
             onChange={(val) => setCustomization({ ...customization, faviconUrl: val })}
           />
 
+          {/* Preview em Tempo Real da Aba do Navegador (Exatamente como na Imagem 5) */}
+          <div className="rounded-2xl border border-[var(--admin-border)] bg-black/40 p-4 space-y-3 shadow-inner">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-rose-400 uppercase tracking-wider">
+                <Globe className="h-4 w-4" />
+                Preview em Tempo Real da Aba do Navegador
+              </span>
+              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-semibold px-2 py-0.5">
+                Visão ao Vivo da Cliente
+              </span>
+            </div>
+
+            {/* Mockup da Aba do Navegador (Estilo Chrome / Edge Dark Mode como na Imagem 5) */}
+            <div className="rounded-xl overflow-hidden border border-white/10 bg-[#1e232a] shadow-lg">
+              {/* Barra Superior da Janela */}
+              <div className="bg-[#15191e] px-3 pt-2.5 flex items-center gap-2 border-b border-white/5">
+                <div className="flex items-center gap-1.5 mr-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+                </div>
+
+                {/* A Aba Ativa */}
+                <div className="flex items-center gap-2 bg-[#1e232a] px-3.5 py-1.5 rounded-t-lg border-t border-x border-white/10 max-w-sm shadow-xs text-xs">
+                  {customization.faviconUrl ? (
+                    <img
+                      src={customization.faviconUrl}
+                      alt="Favicon"
+                      className="w-4 h-4 object-contain rounded-xs shrink-0"
+                    />
+                  ) : (
+                    <Globe className="w-4 h-4 text-stone-400 shrink-0" />
+                  )}
+                  <span className="text-stone-200 font-medium text-xs truncate max-w-[200px]">
+                    {customization.pageTitle || 'Flor de Seda | Moda Feminina'}
+                  </span>
+                  <X className="w-3.5 h-3.5 text-stone-400 hover:text-white shrink-0 ml-1 cursor-pointer" />
+                </div>
+              </div>
+
+              {/* Barra de Endereço URL */}
+              <div className="bg-[#1e232a] px-4 py-2 flex items-center gap-2 text-xs text-stone-400">
+                <div className="flex-1 bg-[#15191e] rounded-md px-3 py-1 text-[11px] font-mono text-stone-300 flex items-center gap-1.5 border border-white/5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="text-emerald-400 font-semibold">https://</span>
+                  <span>fashionstylogirls.vercel.app</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Prévia nos Resultados do Google (SERP) */}
+            <div className="p-3.5 rounded-xl bg-white dark:bg-stone-900 border border-[var(--admin-border)] space-y-1">
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Prévia na Busca do Google:</span>
+              <div className="flex items-center gap-2 text-xs text-stone-500">
+                {customization.faviconUrl ? (
+                  <img src={customization.faviconUrl} alt="" className="w-3.5 h-3.5 object-contain" />
+                ) : (
+                  <Globe className="w-3.5 h-3.5" />
+                )}
+                <span className="truncate">fashionstylogirls.vercel.app</span>
+              </div>
+              <p className="text-blue-600 dark:text-blue-400 font-medium text-xs hover:underline cursor-pointer truncate">
+                {customization.pageTitle || 'Flor de Seda | Moda Feminina Elegante & Peças Nobres'}
+              </p>
+              <p className="text-stone-600 dark:text-stone-400 text-[11px] line-clamp-2">
+                Conheça a coleção de vestidos e conjuntos da {customization.companyName || 'Flor de Seda'}. Loja de roupas femininas com tecidos nobres, modelagens fluidas e entrega via Correios.
+              </p>
+            </div>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 pt-2">
             <Field label="WhatsApp (só números)">
               <Input
@@ -876,7 +938,21 @@ export function SettingsTab({ liveKey }: { liveKey: number }) {
             </Field>
           </div>
 
-          <Button variant="primary" loading={busy} onClick={() => save('customization')}>
+          <Button
+            variant="primary"
+            loading={busy}
+            onClick={() => {
+              setConfirmModal({
+                open: true,
+                title: 'Confirmar Alterações na Identidade da Loja',
+                description: `Deseja publicar imediatamente as alterações? O título será atualizado para "${customization.pageTitle}" e o novo favicon será sincronizado com a aba do navegador de todas as clientes.`,
+                onConfirm: async () => {
+                  setConfirmModal(null);
+                  await save('customization');
+                }
+              });
+            }}
+          >
             Salvar Identidade & Títulos
           </Button>
         </div>
@@ -885,14 +961,14 @@ export function SettingsTab({ liveKey }: { liveKey: number }) {
       {/* 4. Localização Física da Loja & Preenchimento por CEP */}
       <Card>
         <SectionTitle
-          title="Localização Física da Loja & Atelier"
+          title="Localização Física da Loja de Roupas Femininas"
           subtitle="Altere a localização com preenchimento automático de total precisão via CEP"
           action={<Badge tone="good">ViaCEP Oficial</Badge>}
         />
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-end gap-3">
             <div className="flex-1 w-full">
-              <Field label="CEP da Loja / Atelier" hint="Digite os 8 dígitos para preenchimento automático">
+              <Field label="CEP da Loja" hint="Digite os 8 dígitos para preenchimento automático">
                 <Input
                   value={customization.storeLocation?.cep || ''}
                   onChange={(e) => {
@@ -952,7 +1028,7 @@ export function SettingsTab({ liveKey }: { liveKey: number }) {
                   const loc = { ...(customization.storeLocation || {}), complement: e.target.value };
                   setCustomization({ ...customization, storeLocation: loc });
                 }}
-                placeholder="Ex: Atelier Jardins"
+                placeholder="Ex: Loja Jardins"
               />
             </Field>
 
@@ -1027,7 +1103,7 @@ export function SettingsTab({ liveKey }: { liveKey: number }) {
           <div className="grid gap-3 sm:grid-cols-3">
             {[
               { id: 'online', label: 'Loja Aberta (Online)', desc: 'Visível normalmente para todos os leads e clientes' },
-              { id: 'maintenance', label: 'Modo Manutenção', desc: 'Atelier fechado para leads, exibe tela de atualização elegante' },
+              { id: 'maintenance', label: 'Modo Manutenção', desc: 'Loja fechada para leads, exibe tela de atualização elegante' },
               { id: 'private', label: 'Loja Privada', desc: 'Acesso restrito exclusivo ao gestor' }
             ].map((mode) => (
               <div
@@ -1051,7 +1127,7 @@ export function SettingsTab({ liveKey }: { liveKey: number }) {
               <Input
                 value={customization.maintenanceTitle || ''}
                 onChange={(e) => setCustomization({ ...customization, maintenanceTitle: e.target.value })}
-                placeholder="Ex: Atelier Flor de Seda em Atualização"
+                placeholder="Ex: Flor de Seda em Atualização"
               />
             </Field>
 
@@ -1251,6 +1327,28 @@ export function SettingsTab({ liveKey }: { liveKey: number }) {
           </div>
         </Card>
       </div>
+    
+      {confirmModal && (
+        <Modal
+          open={confirmModal.open}
+          onClose={() => setConfirmModal(null)}
+          title={confirmModal.title}
+          subtitle="Confirmação de alteração e sincronização ao vivo"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setConfirmModal(null)}>Cancelar</Button>
+              <Button variant="primary" loading={busy} onClick={confirmModal.onConfirm}>Confirmar e Publicar Agora</Button>
+            </>
+          }
+        >
+          <div className="space-y-3 text-xs text-stone-300">
+            <p>{confirmModal.description}</p>
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[11px]">
+              A alteração será propagada em tempo real para a loja e refletida imediatamente no navegador dos leads.
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

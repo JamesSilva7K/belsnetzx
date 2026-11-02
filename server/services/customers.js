@@ -20,7 +20,8 @@ function publicCustomer(customer) {
  lastLoginAt: customer.lastLoginAt || null,
  ordersCount: customer.ordersCount || 0,
  totalSpent: customer.totalSpent || 0,
- addresses: customer.addresses || []
+ addresses: customer.addresses || [],
+  wishlist: customer.wishlist || []
  };
 }
 
@@ -252,4 +253,16 @@ export function listCustomers({ search = '', limit = 200 } = {}) {
  };
  })
  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+
+export function syncCustomerWishlist(customerId, wishlist) {
+  const cleanList = Array.isArray(wishlist) ? Array.from(new Set(wishlist.map(String))) : [];
+  const updated = commit((store) => {
+    const record = store.customers.find((entry) => entry.id === customerId);
+    if (!record) throw new HttpError(404, 'Cliente não encontrado.', 'customer_not_found');
+    record.wishlist = cleanList;
+    return record;
+  });
+  return publicCustomer(updated);
 }

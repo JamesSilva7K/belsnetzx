@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   Boxes,
   Eye,
+  Heart,
   Image as ImageIcon,
   LayoutGrid,
   List,
@@ -655,13 +656,113 @@ export function CatalogTab({ liveKey }: { liveKey: number }) {
               </div>
             </div>
 
-            <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card-bg)] p-4 space-y-3">
-              <p className="text-xs font-semibold text-rose-500 dark:text-rose-400 uppercase tracking-wider">Preços & Custos</p>
-              <div className="grid grid-cols-3 gap-3">
-                <Field label="Preço de venda"><Input type="number" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} placeholder="299.90" /></Field>
-                <Field label="Preço de R$"><Input type="number" step="0.01" value={form.compareAtPrice} onChange={(event) => setForm({ ...form, compareAtPrice: event.target.value })} placeholder="359.90" /></Field>
-                <Field label="Custo da peça"><Input type="number" step="0.01" value={form.costPrice} onChange={(event) => setForm({ ...form, costPrice: event.target.value })} placeholder="110.00" /></Field>
+            <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card-bg)] p-4 space-y-4">
+              <div className="flex items-center justify-between border-b border-[var(--admin-border)] pb-2.5">
+                <p className="text-xs font-semibold text-rose-500 dark:text-rose-400 uppercase tracking-wider">Preços & Descontos Promocionais</p>
+                <span className="text-[11px] text-[var(--admin-text-subtle)] font-medium">Controle Inteligente</span>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Preço de Venda Final (R$)" hint="Valor cobrado da cliente no checkout">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.price}
+                    onChange={(event) => {
+                      const newPrice = event.target.value;
+                      setForm({ ...form, price: newPrice });
+                    }}
+                    placeholder="196.72"
+                  />
+                </Field>
+
+                <Field label="Custo de Aquisição (R$)" hint="Para cálculo real de margem de lucro">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.costPrice}
+                    onChange={(event) => setForm({ ...form, costPrice: event.target.value })}
+                    placeholder="85.00"
+                  />
+                </Field>
+              </div>
+
+              {/* Seção Inteligente de Desconto Promocional */}
+              <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="enable-discount"
+                      checked={Boolean(form.compareAtPrice && Number(form.compareAtPrice) > Number(form.price || 0))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          const base = Number(form.price || 100);
+                          const original = (base * 1.25).toFixed(2);
+                          setForm({ ...form, compareAtPrice: original });
+                        } else {
+                          setForm({ ...form, compareAtPrice: '' });
+                        }
+                      }}
+                      className="rounded border-rose-400 text-rose-600 focus:ring-rose-500 h-4 w-4 cursor-pointer"
+                    />
+                    <label htmlFor="enable-discount" className="text-xs font-bold text-[var(--admin-text-main)] cursor-pointer">
+                      Ativar Desconto Promocional nesta Peça (% OFF)
+                    </label>
+                  </div>
+                  {form.compareAtPrice && Number(form.compareAtPrice) > Number(form.price || 0) && (
+                    <span className="rounded-full bg-white dark:bg-stone-900 border border-rose-300 px-2.5 py-0.5 text-[10px] font-bold text-rose-600 shadow-2xs">
+                      {Math.round(((Number(form.compareAtPrice) - Number(form.price)) / Number(form.compareAtPrice)) * 100)}% OFF Ativo
+                    </span>
+                  )}
+                </div>
+
+                {form.compareAtPrice && Number(form.compareAtPrice) > Number(form.price || 0) ? (
+                  <div className="space-y-3 pt-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Preço Original De (R$)" hint="Preço que aparecerá riscado">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={form.compareAtPrice}
+                          onChange={(e) => {
+                            const newCompare = e.target.value;
+                            setForm({ ...form, compareAtPrice: newCompare });
+                          }}
+                          placeholder="239.90"
+                        />
+                      </Field>
+
+                      <Field label="Ajustar por Porcentagem (%)" hint="Calcula o preço final automaticamente">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={99}
+                          placeholder="Ex: 18"
+                          onChange={(e) => {
+                            const pct = Number(e.target.value);
+                            const orig = Number(form.compareAtPrice || 0);
+                            if (pct > 0 && pct < 100 && orig > 0) {
+                              const calculatedPrice = (orig * (1 - pct / 100)).toFixed(2);
+                              setForm({ ...form, price: calculatedPrice });
+                            }
+                          }}
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 flex items-center justify-between">
+                      <span>Resultado na Loja: De <strong>R$ {Number(form.compareAtPrice).toFixed(2)}</strong> por <strong>R$ {Number(form.price).toFixed(2)}</strong></span>
+                      <span className="font-bold">Economia: R$ {(Number(form.compareAtPrice) - Number(form.price)).toFixed(2)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-[var(--admin-text-subtle)]">
+                    Marque a caixa acima para configurar preço original "De" e exibir a badge de desconto "% OFF" para as clientes.
+                  </p>
+                )}
+              </div>
+
               {!editing ? <Field label="Estoque inicial por variação"><Input type="number" min={0} value={form.initialStock} onChange={(event) => setForm({ ...form, initialStock: event.target.value })} /></Field> : null}
             </div>
 
@@ -747,15 +848,24 @@ export function CatalogTab({ liveKey }: { liveKey: number }) {
                     </div>
                   )}
 
-                  <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1">
-                    <span className="rounded-md bg-stone-900/80 backdrop-blur-md px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">
-                      {form.category || 'Categoria'}
-                    </span>
+                  <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1 z-10">
+                    {/* Badge % OFF no estilo pílula (Imagem 2) */}
+                    {form.compareAtPrice && Number(form.compareAtPrice) > Number(form.price || 0) ? (
+                      <div className="px-2.5 py-0.5 rounded-full bg-white text-[#DC7898] shadow-xs flex items-center justify-center font-bold text-[9px] leading-tight border border-rose-200 uppercase tracking-wider">
+                        <span>{Math.round(((Number(form.compareAtPrice) - Number(form.price)) / Number(form.compareAtPrice)) * 100)}% OFF</span>
+                      </div>
+                    ) : null}
+
                     {form.isNewArrival && (
-                      <span className="rounded-md bg-rose-500 px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">
-                        Novidade
-                      </span>
+                      <div className="px-2 py-0.5 rounded-full bg-[#E07A9A] text-white text-[8.5px] font-bold tracking-wider uppercase shadow-xs flex items-center gap-1">
+                        <span>NOVO</span>
+                      </div>
                     )}
+                  </div>
+
+                  {/* Botão de Coração Favoritos (Imagem 1) */}
+                  <div className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/95 text-[#DC7898] shadow-xs flex items-center justify-center border border-rose-100 z-10">
+                    <Heart className="w-3.5 h-3.5 fill-[#DC7898]" />
                   </div>
                 </div>
 

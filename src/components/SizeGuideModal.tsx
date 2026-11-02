@@ -539,7 +539,7 @@ export const SizeGuideModal: React.FC = () => {
             <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-rose-50/50 p-3 text-[10px] font-light leading-relaxed text-stone-600">
               <ShieldCheck className="h-4 w-4 flex-shrink-0 text-[#C66382]" />
               <span>
-                Recomendação baseada na tabela de modelagem da boutique e nas medidas que você informar. Em dúvida entre dois tamanhos, fale com o atelier.
+                Recomendação baseada na tabela de modelagem da boutique e nas medidas que você informar. Em dúvida entre dois tamanhos, fale com nossa equipe.
               </span>
             </div>
           </div>
