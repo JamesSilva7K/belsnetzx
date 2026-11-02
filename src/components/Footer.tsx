@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { shopApi, ApiError } from '../lib/api';
 import { IconWhatsApp } from './ui/vector';
 import { 
   Instagram, 
@@ -16,23 +15,18 @@ import {
 
 export const Footer: React.FC = () => {
   const { setSelectedCategory, customization, paymentMethods } = useStore();
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-  const [subscribeError, setSubscribeError] = useState<string | null>(null);
-
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newsletterEmail) return;
-    setSubscribeError(null);
-    try {
-      await shopApi.newsletter(newsletterEmail.trim());
-      setSubscribed(true);
-      setNewsletterEmail('');
-      setTimeout(() => setSubscribed(false), 5000);
-    } catch (error) {
-      setSubscribeError(error instanceof ApiError ? error.message : 'Não foi possível concluir sua inscrição.');
-    }
-  };
+      
+  
+  
+  const instagramUrl = customization?.socials?.instagram?.url || 
+    (customization?.socials?.instagram?.handle ? `https://instagram.com/${customization.socials.instagram.handle.replace(/^@/, '')}` : 'https://instagram.com');
+  const tiktokUrl = customization?.socials?.tiktok?.url || 
+    (customization?.socials?.tiktok?.handle ? `https://tiktok.com/@${customization.socials.tiktok.handle.replace(/^@/, '')}` : '');
+  const facebookUrl = customization?.socials?.facebook?.url || 
+    (customization?.socials?.facebook?.handle ? `https://facebook.com/${customization.socials.facebook.handle.replace(/^@/, '')}` : '');
+  const pinterestUrl = customization?.socials?.pinterest?.url || 
+    (customization?.socials?.pinterest?.handle ? `https://pinterest.com/${customization.socials.pinterest.handle.replace(/^@/, '')}` : '');
+  const whatsappUrl = `https://wa.me/55${(customization?.whatsappNumber || '11987441290').replace(/\D/g, '')}?text=${encodeURIComponent(customization?.greetingMessage || 'Olá! Gostaria de atendimento.')}`;
 
   const instagramPosts = [
     {
@@ -121,25 +115,47 @@ export const Footer: React.FC = () => {
               Um refúgio de sofisticação e feminilidade contemporânea. Cada peça é confeccionada com tecidos nobres, acabamentos refinados e entregue com uma experiência sensorial inesquecível em caixa perfumada.
             </p>
 
-            <div className="pt-2 flex items-center gap-3">
+            <div className="pt-2 flex items-center gap-2.5 flex-wrap">
               <a
-                href="https://instagram.com"
+                href={instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-white border border-rose-200 hover:bg-[#DC7898] hover:border-[#DC7898] text-stone-700 hover:text-white flex items-center justify-center transition-all shadow-2xs"
-                aria-label="Instagram"
+                className="w-9 h-9 rounded-full bg-white border border-rose-200 hover:bg-[#DC7898] hover:border-[#DC7898] text-stone-700 hover:text-white flex items-center justify-center transition-all shadow-2xs group"
+                title="Instagram Oficial"
               >
-                <Instagram className="w-4 h-4" />
+                <Instagram className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </a>
               <a
-                href={`https://wa.me/55${(customization?.whatsappNumber || '11987441290').replace(/\D/g, '')}`}
+                href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-9 h-9 rounded-full bg-white border border-rose-200 hover:bg-[#25D366] hover:border-[#25D366] text-[#25D366] hover:text-white flex items-center justify-center transition-all shadow-2xs group"
-                aria-label="WhatsApp Oficial"
+                title="WhatsApp Oficial"
               >
                 <IconWhatsApp size={18} className="w-[18px] h-[18px] transition-transform group-hover:scale-110" />
               </a>
+              {tiktokUrl && (
+                <a
+                  href={tiktokUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-full bg-white border border-rose-200 hover:bg-stone-900 hover:border-stone-900 text-stone-700 hover:text-white flex items-center justify-center transition-all shadow-2xs text-xs font-bold font-mono group"
+                  title="TikTok Oficial"
+                >
+                  <span className="group-hover:scale-110 transition-transform">TK</span>
+                </a>
+              )}
+              {pinterestUrl && (
+                <a
+                  href={pinterestUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-full bg-white border border-rose-200 hover:bg-red-600 hover:border-red-600 text-stone-700 hover:text-white flex items-center justify-center transition-all shadow-2xs text-xs font-bold font-serif group"
+                  title="Pinterest Oficial"
+                >
+                  <span className="group-hover:scale-110 transition-transform">P</span>
+                </a>
+              )}
             </div>
           </div>
 
@@ -249,43 +265,56 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Newsletter Subscription */}
+          {/* Redes Sociais e Canais Oficiais (Sem formulário de e-mail de lead) */}
           <div>
             <h4 className="font-serif text-sm font-bold text-[#2D2427] uppercase tracking-wider mb-4">
-              Clube Flor de Seda
+              Canais Oficiais
             </h4>
-            <p className="text-xs text-stone-600 mb-3 font-light">
-              Receba convites de lançamentos e ganhe 10% OFF na primeira compra.
+            <p className="text-xs text-stone-600 mb-3 font-light leading-relaxed">
+              Acompanhe lançamentos exclusivos, bastidores das novas coleções e inspirações de looks elegantes em nossas redes.
             </p>
             
-            <form onSubmit={handleSubscribe} className="space-y-2.5">
-              <input
-                type="email"
-                required
-                placeholder="Seu melhor e-mail"
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                className="w-full bg-white border border-rose-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#DC7898]/40 focus:border-[#DC7898] shadow-2xs"
-              />
-              <button
-                type="submit"
-                className="w-full py-2.5 bg-[#DC7898] hover:bg-[#D36789] text-white rounded-xl text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5"
+            <div className="space-y-2.5">
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-rose-200 hover:border-[#DC7898] hover:bg-rose-50/50 transition-all text-xs font-semibold text-stone-800 shadow-2xs group cursor-pointer"
               >
-                <span>Cadastrar-se</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-              {subscribed && (
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium bg-emerald-50 border border-emerald-200 p-2 rounded-xl">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                  <span>Inscrição registrada. Você receberá nossas novidades.</span>
+                <div className="flex items-center gap-2">
+                  <Instagram className="w-4 h-4 text-[#DC7898]" />
+                  <span>Instagram</span>
                 </div>
-              )}
-              {subscribeError && (
-                <div className="flex items-center gap-1.5 text-[11px] text-rose-700 font-medium bg-rose-50 border border-rose-200 p-2 rounded-xl">
-                  <span>{subscribeError}</span>
+                <span className="text-[11px] text-[#DC7898] font-mono group-hover:translate-x-0.5 transition-transform">
+                  {customization?.socials?.instagram?.handle || '@flordeseda'}
+                </span>
+              </a>
+
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200 hover:border-emerald-400 hover:bg-emerald-100/70 transition-all text-xs font-semibold text-emerald-900 shadow-2xs group cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <IconWhatsApp size={16} className="w-4 h-4 text-emerald-600" />
+                  <span>WhatsApp Oficial</span>
                 </div>
-              )}
-            </form>
+                <span className="text-[11px] text-emerald-700 font-medium">
+                  {customization?.whatsappDisplay || '(11) 98744-1290'}
+                </span>
+              </a>
+
+              <div className="p-2.5 rounded-xl bg-gradient-to-r from-rose-50 to-[#FFF9FA] border border-rose-100 text-[11px] text-stone-600 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-stone-800">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#DC7898]" />
+                  <span>Atendimento Humanizado</span>
+                </div>
+                <p className="text-[10px] text-stone-500 leading-tight">
+                  Consultoria de medidas e suporte das 09h às 19h via WhatsApp oficial.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

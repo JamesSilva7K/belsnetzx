@@ -683,9 +683,15 @@ export function setTrackingCode(orderId, trackingCode, { actor = 'painel', note 
   return updated;
 }
 
-export function customerOrders(email) {
-  const target = normalizeEmail(email);
-  return db().orders.filter((order) => normalizeEmail(order.lead.email) === target);
+export function customerOrders(email, customerId = null, cpf = null) {
+  const target = normalizeEmail(email || '');
+  const cpfDigits = cpf ? onlyDigits(cpf) : null;
+  return db().orders.filter((order) => {
+    if (customerId && order.customerId === customerId) return true;
+    if (target && normalizeEmail(order.lead?.email || '') === target) return true;
+    if (cpfDigits && order.lead?.cpf && onlyDigits(order.lead.cpf) === cpfDigits) return true;
+    return false;
+  });
 }
 
 export function deleteOrder(id, { actor = 'painel' } = {}) {

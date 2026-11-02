@@ -268,7 +268,7 @@ router.put('/customer/wishlist', asyncHandler((req, res) => {
 router.get('/me/orders', asyncHandler((req, res) => {
   const { customer } = customerFromRequest(req);
   if (!customer) throw new HttpError(401, 'Entre na sua conta para ver seus pedidos.', 'unauthorized');
-  res.json({ ok: true, orders: customerOrders(customer.email) });
+  res.json({ ok: true, orders: customerOrders(customer.email, customer.id, customer.cpf) });
 }));
 
 router.post('/newsletter', rateLimit({ windowMs: 300000, max: 6, key: 'newsletter' }), (req, res) => {

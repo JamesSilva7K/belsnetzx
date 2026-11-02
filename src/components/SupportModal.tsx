@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Mail, Ruler, Sparkles } from 'lucide-react';
+import { Clock, Instagram, Ruler, Sparkles } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ModalShell } from './ui/ModalShell';
 import { IconWhatsApp } from './ui/vector';
@@ -49,10 +49,15 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
 
           <div className="rounded-2xl border border-rose-100 bg-rose-50/40 p-3.5">
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-stone-800">
-              <Mail className="h-3.5 w-3.5 text-[#DC7898]" /> E-mail
+              <Instagram className="h-3.5 w-3.5 text-[#DC7898]" /> Instagram
             </p>
-            <a href={`mailto:${customization?.supportEmail || ''}`} className="mt-1 block break-all text-[11px] font-light text-stone-600 hover:text-[#B65C7B]">
-              {customization?.supportEmail || '—'}
+            <a 
+              href={customization?.socials?.instagram?.url || 'https://instagram.com/flordeseda'} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="mt-1 block break-all text-[11px] font-semibold text-[#DC7898] hover:underline"
+            >
+              {customization?.socials?.instagram?.handle || '@flordeseda'}
             </a>
           </div>
         </div>

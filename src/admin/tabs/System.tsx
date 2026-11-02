@@ -958,6 +958,208 @@ export function SettingsTab({ liveKey }: { liveKey: number }) {
         </div>
       </Card>
 
+      
+      {/* 3.1. Gerenciador Avançado de Redes Sociais da Loja */}
+      <Card>
+        <SectionTitle
+          title="Redes Sociais Oficiais da Loja"
+          subtitle="Gerencie os canais oficiais da loja com validação e reconhecimento inteligente de @handles e links"
+        />
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Instagram Oficial (@handle ou Link)" hint="Aparece no rodapé e em botões de redes">
+              <div className="space-y-1">
+                <Input
+                  value={customization.socials?.instagram?.handle || ''}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    const cleanHandle = raw.replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/^@/, '');
+                    const fullUrl = cleanHandle ? `https://instagram.com/${cleanHandle}` : '';
+                    setCustomization({
+                      ...customization,
+                      socials: {
+                        ...(customization.socials || {}),
+                        instagram: {
+                          platform: 'instagram',
+                          handle: cleanHandle ? `@${cleanHandle}` : '',
+                          url: fullUrl,
+                          isVerified: true
+                        }
+                      }
+                    });
+                  }}
+                  placeholder="Ex: @flordeseda ou link completo"
+                />
+                {customization.socials?.instagram?.url && (
+                  <div className="flex items-center justify-between text-[11px] text-stone-400 pt-1">
+                    <span className="truncate text-rose-400 font-mono">{customization.socials.instagram.url}</span>
+                    <a
+                      href={customization.socials.instagram.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-stone-300 hover:text-white underline ml-2 shrink-0"
+                    >
+                      Testar Link
+                    </a>
+                  </div>
+                )}
+              </div>
+            </Field>
+
+            <Field label="TikTok Oficial (@handle ou Link)">
+              <div className="space-y-1">
+                <Input
+                  value={customization.socials?.tiktok?.handle || ''}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    const cleanHandle = raw.replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/, '').replace(/^@/, '');
+                    const fullUrl = cleanHandle ? `https://tiktok.com/@${cleanHandle}` : '';
+                    setCustomization({
+                      ...customization,
+                      socials: {
+                        ...(customization.socials || {}),
+                        tiktok: {
+                          platform: 'tiktok',
+                          handle: cleanHandle ? `@${cleanHandle}` : '',
+                          url: fullUrl,
+                          isVerified: true
+                        }
+                      }
+                    });
+                  }}
+                  placeholder="Ex: @flordeseda"
+                />
+                {customization.socials?.tiktok?.url && (
+                  <div className="flex items-center justify-between text-[11px] text-stone-400 pt-1">
+                    <span className="truncate text-rose-400 font-mono">{customization.socials.tiktok.url}</span>
+                    <a
+                      href={customization.socials.tiktok.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-stone-300 hover:text-white underline ml-2 shrink-0"
+                    >
+                      Testar Link
+                    </a>
+                  </div>
+                )}
+              </div>
+            </Field>
+
+            <Field label="Facebook Oficial (Página ou Usuário)">
+              <div className="space-y-1">
+                <Input
+                  value={customization.socials?.facebook?.handle || ''}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    const clean = raw.replace(/^https?:\/\/(www\.)?facebook\.com\//, '');
+                    const fullUrl = clean ? `https://facebook.com/${clean}` : '';
+                    setCustomization({
+                      ...customization,
+                      socials: {
+                        ...(customization.socials || {}),
+                        facebook: {
+                          platform: 'facebook',
+                          handle: clean,
+                          url: fullUrl,
+                          isVerified: true
+                        }
+                      }
+                    });
+                  }}
+                  placeholder="Ex: flordeseda.oficial"
+                />
+                {customization.socials?.facebook?.url && (
+                  <div className="flex items-center justify-between text-[11px] text-stone-400 pt-1">
+                    <span className="truncate text-rose-400 font-mono">{customization.socials.facebook.url}</span>
+                    <a
+                      href={customization.socials.facebook.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-stone-300 hover:text-white underline ml-2 shrink-0"
+                    >
+                      Testar Link
+                    </a>
+                  </div>
+                )}
+              </div>
+            </Field>
+
+            <Field label="Pinterest Oficial (Perfil de Looks)">
+              <div className="space-y-1">
+                <Input
+                  value={customization.socials?.pinterest?.handle || ''}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    const clean = raw.replace(/^https?:\/\/(www\.)?pinterest\.com\//, '');
+                    const fullUrl = clean ? `https://pinterest.com/${clean}` : '';
+                    setCustomization({
+                      ...customization,
+                      socials: {
+                        ...(customization.socials || {}),
+                        pinterest: {
+                          platform: 'pinterest',
+                          handle: clean,
+                          url: fullUrl,
+                          isVerified: true
+                        }
+                      }
+                    });
+                  }}
+                  placeholder="Ex: flordeseda"
+                />
+                {customization.socials?.pinterest?.url && (
+                  <div className="flex items-center justify-between text-[11px] text-stone-400 pt-1">
+                    <span className="truncate text-rose-400 font-mono">{customization.socials.pinterest.url}</span>
+                    <a
+                      href={customization.socials.pinterest.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-stone-300 hover:text-white underline ml-2 shrink-0"
+                    >
+                      Testar Link
+                    </a>
+                  </div>
+                )}
+              </div>
+            </Field>
+          </div>
+
+          <Field label="Mensagem Inicial de Saudação do WhatsApp" hint="Texto pré-preenchido quando o lead clica no botão do WhatsApp">
+            <Input
+              value={customization.greetingMessage || ''}
+              onChange={(e) => setCustomization({ ...customization, greetingMessage: e.target.value })}
+              placeholder="Ex: Olá! Vim pelo site da Flor de Seda e gostaria de tirar uma dúvida sobre os vestidos."
+            />
+          </Field>
+
+          {/* Prévia ao Vivo das Redes Sociais */}
+          <div className="p-3.5 rounded-xl bg-black/30 border border-[var(--admin-border)] flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs text-stone-300">
+              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+              <span>Canais configurados e sincronizados com o rodapé e atendimento da loja</span>
+            </div>
+            <Button
+              size="sm"
+              variant="primary"
+              loading={busy}
+              onClick={() => {
+                setConfirmModal({
+                  open: true,
+                  title: 'Confirmar Atualização das Redes Sociais',
+                  description: 'Deseja publicar os novos links e perfis das redes sociais na loja imediatamente?',
+                  onConfirm: async () => {
+                    setConfirmModal(null);
+                    await save('customization');
+                  }
+                });
+              }}
+            >
+              Salvar Redes Sociais
+            </Button>
+          </div>
+        </div>
+      </Card>
+
       {/* 4. Localização Física da Loja & Preenchimento por CEP */}
       <Card>
         <SectionTitle
